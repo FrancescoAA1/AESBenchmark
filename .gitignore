@@ -42,3 +42,17 @@
 
 # IDEs
 .vscode/
+
+# --- CMake build dirs ---
+build/
+build-*/
+cmake-build-*/    
+out/                
+
+# --- Core CMake-generated files ---
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+install_manifest.txt
+Makefile
