@@ -9,7 +9,10 @@ How to Setup the Environment (for Windows)
 4) Install the extensions C/C++ and CMakeTools on VSCode
 5) Go to File -> Preferences -> Settings -> type "cmake path" and make sure it is equal to C:\Program Files\CMake\bin\cmake.exe
 5) From the project folder type the following commands:
-	mkdir build #create folder
-	cd build #enter build folder
-	cmake --build . #build project
-	.\Debug\AES.exe #execute
+	5.1) mkdir build #create folder
+	
+	5.2) cd build #enter build folder
+	
+	5.3) cmake --build . #build project
+	
+	5.4) .\Debug\AES.exe #execute
