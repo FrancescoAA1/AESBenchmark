@@ -1,8 +1,5 @@
 // aes_aesni.cpp
-#include "aes_aesni.h"
-#include <wmmintrin.h>
-#include <cstdint>
-#include <vector>
+
 
 // =============================
 // 1. Key Expansion with AES-NI
