@@ -1,7 +1,7 @@
 // aes_ttable.h
 #pragma once
-#include <cstdint>
-#include <vector>
+#include<cstdint>
+#include<vector>
 
 class AESTTable {
 private:
@@ -24,8 +24,8 @@ public:
 
 //Constructor
     explicit AESTTable(const std::vector<uint8_t>& key);
-// Block encryption    
+// Block encryption
     void encryptBlock(const uint8_t in[16], uint8_t out[16]) const;
-// Block decryption    
+// Block decryption
     void decryptBlock(const uint8_t in [16], uint8_t out[16]) const;
 };

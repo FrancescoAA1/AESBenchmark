@@ -1,6 +1,6 @@
 // aes_ttable.cpp
 
-#include "aes_ttable.h"
+#include<aes_ttable.h>
 #include <stdexcept>
 
 // ===== Define static members ===== // TODO: fill AES S-box
@@ -53,20 +53,38 @@ bool AESTTable::tablesInit = false;
 // ===== Helper functions =====
 inline uint8_t AESTTable::xtime(uint8_t a) {
     // TODO: implement xtime
-    return 0;
+      return (a << 1) ^ ((a & 0x80) ? 0x1b : 0x00);
 }
 
 inline uint8_t AESTTable::gfmul(uint8_t a, uint8_t b) {
     // TODO: implement GF(2^8) multiplication
-    return 0;
+     uint8_t res = 0;
+    while (b) {
+        if (b & 1) res ^= a;
+        a = xtime(a);
+        b >>= 1;
+    }
+    return res;
 }
+
 
 // ===== Initialize T-tables =====
 void AESTTable::initTables() {
     if (tablesInit) return;
     // TODO: fill T0..T3 using S-box + MixColumns math
+    for (int x = 0; x < 256; x++) {
+        uint8_t s = S[x];
+        uint8_t s2 = gfmul(s, 2);
+        uint8_t s3 = gfmul(s, 3);
+
+        T0[x] = (s2 << 24) | (s << 16) | (s << 8) | s3;
+        T1[x] = (s3 << 24) | (s2 << 16) | (s << 8) | s;
+        T2[x] = (s << 24) | (s3 << 16) | (s2 << 8) | s;
+        T3[x] = (s << 24) | (s << 16) | (s3 << 8) | s2;
+    }
     tablesInit = true;
 }
+
 
 // ===== Constructor =====
 AESTTable::AESTTable(const std::vector<uint8_t>& key) {
@@ -85,13 +103,11 @@ void AESTTable::keyExpansion(const std::vector<uint8_t>& key) {
                     | (key[4*i+2] << 8) | (key[4*i+3]);
     }
  // Expand res:t: AES key schedule use round constants(Rcon).
-//Rcon[1] = 0x01
+ //Rcon[1] = 0x01
 //Rcon[2] = 0x02
 //Rcon[3] = 0x04
 //doubling each time in GF(2^8), with the irreducible polynomial
 //x^8 + x^4 + x^3 + x + 1
-//Special cases when it overflows → wrap with 0x1B, 0x36 
-//0x100⊕0x11B=0x1B
     static const uint32_t Rcon[10] = {
         0x01000000,0x02000000,0x04000000,0x08000000,0x10000000,
         0x20000000,0x40000000,0x80000000,0x1B000000,0x36000000
