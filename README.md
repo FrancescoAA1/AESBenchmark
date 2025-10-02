@@ -12,6 +12,9 @@ How to Setup the Environment (for Windows)
 	5.1) mkdir build #create folder
 	
 	5.2) cd build #enter build folder
+
+	5.2.1) if CMakeCache.txt is missing then run this command:
+	cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 	
 	5.3) cmake --build . #build project
 	
