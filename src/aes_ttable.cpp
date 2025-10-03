@@ -3,7 +3,7 @@
 #include<aes_ttable.h>
 #include <stdexcept>
 #include<cstdio>
-#include<vector>>
+#include<vector>
 
 
 // ===== Define static members ===== // TODO: fill AES S-box, complete 256 entries (from 0x63 down to 0x16). it is standard AES 128 bites

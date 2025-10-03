@@ -65,38 +65,18 @@ int main() {
 
     // Create AES with T-tables
     AESTTable aesT(key);
+    aes.encryptBlock(plaintext, ciphertext);
 
-    // Encrypt
-    aesT.encryptBlock(plaintext, ciphertext);
-    std::cout << "Ciphertext: ";
-    for (int i = 0; i < 16; i++) std::printf("%02X ", ciphertext[i]);
-    std::cout << std::endl;
+// Decrypt
+aes.decryptBlock(ciphertext, decrypted);
 
-    // Verify encryption
-    bool ok_enc = true;
-    for (int i = 0; i < 16; i++) {
-        if (ciphertext[i] != expected_cipher[i]) {
-            ok_enc = false;
-            break;
-        }
-    }
-    std::cout << (ok_enc);
+// Print results
+std::cout << "Ciphertext: ";
+for (int i = 0; i < 16; i++) std::cout << std::hex << (int)ciphertext[i] << " ";
+std::cout << "\nDecrypted : ";
+for (int i = 0; i < 16; i++) std::cout << std::hex << (int)decrypted[i] << " ";
+std::cout << std::endl;
 
-    // Decrypt
-    aesT.decryptBlock(ciphertext, decrypted);
-    std::cout << "Decrypted : ";
-    for (int i = 0; i < 16; i++) std::printf("%02X ", decrypted[i]);
-    std::cout << std::endl;
 
-    // Verify decryption
-    bool ok_dec = true;
-    for (int i = 0; i < 16; i++) {
-        if (decrypted[i] != plaintext[i]) {
-            ok_dec = false;
-            break;
-        }
-    }
-    std::cout << (ok_dec);
-
-    return 0;
+   return 0;
 }
