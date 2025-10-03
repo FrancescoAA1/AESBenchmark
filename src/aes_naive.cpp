@@ -111,22 +111,13 @@ void AesNaive::EncryptFile() {
             break;
         }
         
-        //if (n < 16 || n == 0){
-            //Add padding if needed
-        //    end_of_file = true;
-        //}
-
         //for (std::streamsize i = 0; i < n; ++i){
         //    std::printf("0X%02X%s", static_cast<unsigned>(buf[i]),
         //        (i + 1 == n) ? "\n" : " ");
         //}
 
+        // Copy buf into state (column-major)
         std::copy(buf.begin(), buf.end(), state);
-
-        /*for (size_t i = 0; i < n; i++)
-        {
-            state[i] = buf[i];
-        }*/
 
         setstatefromblock(state, 16);
 
@@ -142,13 +133,8 @@ void AesNaive::EncryptFile() {
         subBytes(data_);
         shiftRows(data_);
         addRoundKey(data_, roundKeys[10]);
-        // Copy state to cipher
-        /*for (size_t i = 0; i < 16; i++)
-        {
-            cipher[i] = data_[i / 4][i % 4];
-        }
-            */
 
+        // Collect cipher text from state (column-major)
         for (int c = 0, k = 0; c < 4; ++c)
             for (int r = 0; r < 4; ++r, ++k)
                 cipher[k] = data_[r][c];
@@ -156,7 +142,7 @@ void AesNaive::EncryptFile() {
         out.write(reinterpret_cast<const char*>(cipher.data()), cipher.size());
         
         if (end_of_file) break;
-        //encrypt_block
+       
     }
     f.close();
     out.close();
