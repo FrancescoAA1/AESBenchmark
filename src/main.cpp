@@ -16,10 +16,6 @@ int main() {
     }
     std::cout << std::endl;
 
-    AesNaive aes;
-
-    using Byte = std::uint8_t;
-
     Byte newkey[16] = {
         0x7A, 0x1F, 0x93, 0x04,
         0xC5, 0xE2, 0x9B, 0x16,
@@ -27,47 +23,13 @@ int main() {
         0x7D, 0x44, 0x11, 0x9E
     };
 
-    Byte *state = new Byte[16] {};
+    AesNaive aes(newkey, 16);
 
-    std::array<Byte, 16> buf{};                 // will hold up to 16 bytes
-    std::array<Byte,16> cipher{};
+    Byte ** data = aes.createState();
 
-    std::ifstream f("..\\src\\input.jpg", std::ios::binary);
-    std::ofstream out("..\\src\\output.jpg", std::ios::binary); 
-
-    if (!f || !out) { std::perror("open"); return 1; }
-
-    bool end_of_file = false;
-    for(;;)
-    {
-        f.read(reinterpret_cast<char*>(buf.data()), buf.size());
-        std::streamsize n = f.gcount();             // how many bytes were actually read
-        if (n < 16 || n == 0){
-            //Add padding if needed
-            end_of_file = true;
-        }
-
-        //for (std::streamsize i = 0; i < n; ++i){
-        //    std::printf("0X%02X%s", static_cast<unsigned>(buf[i]),
-        //        (i + 1 == n) ? "\n" : " ");
-        //}
-
-        for (size_t i = 0; i < n; i++)
-        {
-            state[i] = buf[i];
-        }
-
-        cipher = buf;
-        out.write(reinterpret_cast<const char*>(cipher.data()), cipher.size());
-        
-        if (end_of_file) break;
-        //encrypt_block
-    }
+    aes.EncryptFile();
+    //Byte ** data = aes.createState(state, 16);
+    //aes.displayState(data);
     
-    Byte ** data = aes.createState(state, 16);
-    aes.displayState(data);
-    
-    f.close();
-    out.close();
     return 0;
 }
