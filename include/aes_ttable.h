@@ -11,7 +11,8 @@ private:
     // Lookup tables (static)
     static const uint8_t S[256];         // S-box
     static const uint8_t InvS[256];   // inverse S-box
-    static uint32_t T0[256], T1[256], T2[256], T3[256];
+    static uint32_t T0[256], T1[256], T2[256], T3[256];    // Encrypt table
+    static uint32_t Td0[256], Td1[256], Td2[256], Td3[256]; // decrypt table
     static bool tablesInit;
 
     // Helpers

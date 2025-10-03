@@ -79,11 +79,23 @@ void AESTTable::initTables() {
         uint8_t s = S[x];
         uint8_t s2 = gfmul(s, 2);
         uint8_t s3 = gfmul(s, 3);
-
+// Forward table
         T0[x] = (s2 << 24) | (s << 16) | (s << 8) | s3;
         T1[x] = (s3 << 24) | (s2 << 16) | (s << 8) | s;
         T2[x] = (s << 24) | (s3 << 16) | (s2 << 8) | s;
         T3[x] = (s << 24) | (s << 16) | (s3 << 8) | s2;
+
+//Decryption table (Using invS and inverse MixColumns)
+        uint8_t si = InvS[x];
+        uint8_t s9 = gfmul(si, 9);
+        uint8_t sb = gfmul(si, 11);
+        uint8_t sd = gfmul(si, 13);
+        uint8_t se = gfmul(si, 14);
+
+        Td0[x] = (se << 24) | (s9 << 16) | (sd << 8) | sb;
+        Td1[x] = (sb << 24) | (se << 16) | (s9 << 8) | sd;
+        Td2[x] = (sd << 24) | (sb << 16) | (se << 8) | s9;
+        Td3[x] = (s9 << 24) | (sd << 16) | (sb << 8) | se;
     }
     tablesInit = true;
 }
@@ -132,8 +144,6 @@ void AESTTable::keyExpansion(const std::vector<uint8_t>& key) {
         }
         roundKeys[i] = roundKeys[i-4] ^ temp;
     }
-
-
 }
 
 // ===== Encrypt block =====
@@ -219,6 +229,89 @@ void AESTTable::encryptBlock(const uint8_t in[16], uint8_t out[16]) const {
         roundKeys[43];
 
     // Store output as 16 bytes
+    out[0] = o0 >> 24; out[1] = o0 >> 16; out[2] = o0 >> 8; out[3] = o0;
+    out[4] = o1 >> 24; out[5] = o1 >> 16; out[6] = o1 >> 8; out[7] = o1;
+    out[8] = o2 >> 24; out[9] = o2 >> 16; out[10] = o2 >> 8; out[11] = o2;
+    out[12] = o3 >> 24; out[13] = o3 >> 16; out[14] = o3 >> 8; out[15] = o3;
+}
+
+// ===== Decrypt block =====
+void AESTTable::decryptBlock(const uint8_t in[16], uint8_t out[16]) const {
+    // Load state into 4 words
+    uint32_t s0 = (in[0]<<24)|(in[1]<<16)|(in[2]<<8)|in[3];
+    uint32_t s1 = (in[4]<<24)|(in[5]<<16)|(in[6]<<8)|in[7];
+    uint32_t s2 = (in[8]<<24)|(in[9]<<16)|(in[10]<<8)|in[11];
+    uint32_t s3 = (in[12]<<24)|(in[13]<<16)|(in[14]<<8)|in[15];
+
+    // Initial AddRoundKey (last round keys)
+    s0 ^= roundKeys[40];
+    s1 ^= roundKeys[41];
+    s2 ^= roundKeys[42];
+    s3 ^= roundKeys[43];
+
+    // 9 main inverse rounds (T-tables)
+    for (int round = 9; round > 0; round--) {
+        uint32_t t0 =
+            Td0[s0 >> 24] ^
+            Td1[(s3 >> 16) & 0xFF] ^
+            Td2[(s2 >> 8) & 0xFF] ^
+            Td3[s1 & 0xFF] ^
+            roundKeys[4*round + 0];
+
+        uint32_t t1 =
+            Td0[s1 >> 24] ^
+            Td1[(s0 >> 16) & 0xFF] ^
+            Td2[(s3 >> 8) & 0xFF] ^
+            Td3[s2 & 0xFF] ^
+            roundKeys[4*round + 1];
+
+        uint32_t t2 =
+            Td0[s2 >> 24] ^
+            Td1[(s1 >> 16) & 0xFF] ^
+            Td2[(s0 >> 8) & 0xFF] ^
+            Td3[s3 & 0xFF] ^
+            roundKeys[4*round + 2];
+
+        uint32_t t3 =
+            Td0[s3 >> 24] ^
+            Td1[(s2 >> 16) & 0xFF] ^
+            Td2[(s1 >> 8) & 0xFF] ^
+            Td3[s0 & 0xFF] ^
+            roundKeys[4*round + 3];
+
+        s0 = t0; s1 = t1; s2 = t2; s3 = t3;
+    }
+
+    // Final round (no InvMixColumns, only InvSubBytes + InvShiftRows + AddRoundKey)
+    uint32_t o0 =
+        (InvS[s0 >> 24] << 24) ^
+        (InvS[(s3 >> 16) & 0xFF] << 16) ^
+        (InvS[(s2 >> 8) & 0xFF] << 8) ^
+        (InvS[s1 & 0xFF]) ^
+        roundKeys[0];
+
+    uint32_t o1 =
+        (InvS[s1 >> 24] << 24) ^
+        (InvS[(s0 >> 16) & 0xFF] << 16) ^
+        (InvS[(s3 >> 8) & 0xFF] << 8) ^
+        (InvS[s2 & 0xFF]) ^
+        roundKeys[1];
+
+    uint32_t o2 =
+        (InvS[s2 >> 24] << 24) ^
+        (InvS[(s1 >> 16) & 0xFF] << 16) ^
+        (InvS[(s0 >> 8) & 0xFF] << 8) ^
+        (InvS[s3 & 0xFF]) ^
+        roundKeys[2];
+
+    uint32_t o3 =
+        (InvS[s3 >> 24] << 24) ^
+        (InvS[(s2 >> 16) & 0xFF] << 16) ^
+        (InvS[(s1 >> 8) & 0xFF] << 8) ^
+        (InvS[s0 & 0xFF]) ^
+        roundKeys[3];
+
+    // Store output
     out[0] = o0 >> 24; out[1] = o0 >> 16; out[2] = o0 >> 8; out[3] = o0;
     out[4] = o1 >> 24; out[5] = o1 >> 16; out[6] = o1 >> 8; out[7] = o1;
     out[8] = o2 >> 24; out[9] = o2 >> 16; out[10] = o2 >> 8; out[11] = o2;
