@@ -4,13 +4,14 @@
 #include <fstream>
 #include <array>
 #include <cstdint>
-#include <cstdio>   
+#include <cstdio>
+#include<aes_ttable.h>
 
 
 using namespace std;
 
 int main() {
-    std::vector<int> numbers = {1, 2, 3, 4, 5, 6, 9, 10};
+    std::vector<int> numbers = {1, 2, 3, 4, 5, 6,9, 10};
     for (const auto& num : numbers) {
         std::cout << num << " ";
     }
@@ -59,15 +60,43 @@ int main() {
 
         cipher = buf;
         out.write(reinterpret_cast<const char*>(cipher.data()), cipher.size());
-        
+
         if (end_of_file) break;
         //encrypt_block
+
+
+        std::vector<uint8_t> key{
+            0x2b, 0x7e, 0x15,0x16,
+            0x28, 0xae, 0xd2, 0xa6,
+            0xab, 0xf7, 0x97, 0x75,
+            0x46,0x20,0x63,0x75
+        };
+        uint8_t plaintext[16]= {
+        0x32, 0x43, 0xf6, 0xa8,
+        0x88, 0x5a, 0x30, 0x8d,
+        0x31, 0x31, 0x98, 0xa2,
+        0xe0, 0x37, 0x07, 0x34
+        };
+
+        uint8_t ciphertext[16];
+
+        AESTTable aes(key);
+
+        aes.encryptBlock(plaintext, ciphertext);
+        std::cout << "Ciphertext: ";
+    for (int i = 0; i < 16; i++) {
+        std::cout << std::hex << (int)ciphertext[i] << " ";
     }
-    
+    std::cout << std::endl;
+
+    return 0;
+}
+
     Byte ** data = aes.createState(state, 16);
     aes.displayState(data);
-    
+
     f.close();
     out.close();
+
     return 0;
 }

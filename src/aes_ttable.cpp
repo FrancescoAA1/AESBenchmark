@@ -2,8 +2,11 @@
 
 #include<aes_ttable.h>
 #include <stdexcept>
+#include<cstdio>
+#include<vector>>
 
-// ===== Define static members ===== // TODO: fill AES S-box
+
+// ===== Define static members ===== // TODO: fill AES S-box, complete 256 entries (from 0x63 down to 0x16). it is standard AES 128 bites
 const uint8_t AESTTable::S[256] =
 {   0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,
     0xca,0x82,0xc9,0x7d,0xfa,0x59,0x47,0xf0,0xad,0xd4,0xa2,0xaf,0x9c,0xa4,0x72,0xc0,
@@ -107,7 +110,7 @@ void AESTTable::keyExpansion(const std::vector<uint8_t>& key) {
 //Rcon[2] = 0x02
 //Rcon[3] = 0x04
 //doubling each time in GF(2^8), with the irreducible polynomial
-//x^8 + x^4 + x^3 + x + 1
+//x^8 + x^4 + x^3 + x + 1                            //round Constant from 1- round 10
     static const uint32_t Rcon[10] = {
         0x01000000,0x02000000,0x04000000,0x08000000,0x10000000,
         0x20000000,0x40000000,0x80000000,0x1B000000,0x36000000
