@@ -4,7 +4,7 @@
 #include<fstream>
 #include <stdexcept>
 #include<iomanip>
-#include<arrary>
+#include<array>
 #include<cstring>
 #include<cstdio>
 #include<vector>

@@ -41,6 +41,8 @@ private:
             a = xtime(a);
             b >>= 1;
         }
+
+        return res;
     }
     static void initTables();// build T/Td tables once
     void keyExpansion(const std::vector<Byte>& key); // expand key to roundKeys
