@@ -1,13 +1,18 @@
 // aes_ttable.cpp
 
 #include<aes_ttable.h>
+#include<fstream>
 #include <stdexcept>
+#include<iomanip>
+#include<arrary>
+#include<cstring>
 #include<cstdio>
 #include<vector>
 
 
-// ===== Define static members ===== // TODO: fill AES S-box, complete 256 entries (from 0x63 down to 0x16). it is standard AES 128 bites
-const uint8_t AESTTable::S[256] =
+
+// =====  fill AES S-box, complete 256 entries (from 0x63 down to 0x16). it is standard AES 128 bites
+const Byte AesTTable::SBOX[256] =
 {   0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,
     0xca,0x82,0xc9,0x7d,0xfa,0x59,0x47,0xf0,0xad,0xd4,0xa2,0xaf,0x9c,0xa4,0x72,0xc0,
     0xb7,0xfd,0x93,0x26,0x36,0x3f,0xf7,0xcc,0x34,0xa5,0xe5,0xf1,0x71,0xd8,0x31,0x15,
@@ -27,7 +32,7 @@ const uint8_t AESTTable::S[256] =
 
 };
 // ===== Inverse S-box (used for decryption) =====
-const uint8_t AESTTable::InvS[256] = {
+const Byte AesTTable::Inv_SBOX[256] = {
     0x52,0x09,0x6a,0xd5,0x30,0x36,0xa5,0x38,0xbf,0x40,0xa3,0x9e,0x81,0xf3,0xd7,0xfb,
     0x7c,0xe3,0x39,0x82,0x9b,0x2f,0xff,0x87,0x34,0x8e,0x43,0x44,0xc4,0xde,0xe9,0xcb,
     0x54,0x7b,0x94,0x32,0xa6,0xc2,0x23,0x3d,0xee,0x4c,0x95,0x0b,0x42,0xfa,0xc3,0x4e,
@@ -46,98 +51,119 @@ const uint8_t AESTTable::InvS[256] = {
     0x17,0x2b,0x04,0x7e,0xba,0x77,0xd6,0x26,0xe1,0x69,0x14,0x63,0x55,0x21,0x0c,0x7d
 };
 
-
-uint32_t AESTTable::T0[256];
-uint32_t AESTTable::T1[256];
-uint32_t AESTTable::T2[256];
-uint32_t AESTTable::T3[256];
-bool AESTTable::tablesInit = false;
-
-// ===== Helper functions =====
-inline uint8_t AESTTable::xtime(uint8_t a) {
-    // TODO: implement xtime
-      return (a << 1) ^ ((a & 0x80) ? 0x1b : 0x00);
-}
-
-inline uint8_t AESTTable::gfmul(uint8_t a, uint8_t b) {
-    // TODO: implement GF(2^8) multiplication
-     uint8_t res = 0;
-    while (b) {
-        if (b & 1) res ^= a;
-        a = xtime(a);
-        b >>= 1;
-    }
-    return res;
-}
+// static table & init flag
+uint32_t AesTTable::T0[256];
+uint32_t AesTTable::T1[256];
+uint32_t AesTTable::T2[256];
+uint32_t AesTTable::T3[256];
+uint32_t AesTTable::Td0[256];
+uint32_t AesTTable::Td1[256];
+uint32_t AesTTable::Td2[256];
+uint32_t AesTTable::Td3[256];
+bool AesTTable::tablesInit = false;
 
 
-// ===== Initialize T-tables =====
-void AESTTable::initTables() {
+// ===== Initialize T-tables :forward + inverse
+void AesTTable::initTables() {
     if (tablesInit) return;
-    // TODO: fill T0..T3 using S-box + MixColumns math
-    for (int x = 0; x < 256; x++) {
-        uint8_t s = S[x];
+
+    //  fill T0..T3 using S-box + MixColumns math
+    for (int x = 0; x < 256; ++x) {
+        uint8_t s = SBOX[x];
         uint8_t s2 = gfmul(s, 2);
         uint8_t s3 = gfmul(s, 3);
-// Forward table
-        T0[x] = (s2 << 24) | (s << 16) | (s << 8) | s3;
-        T1[x] = (s3 << 24) | (s2 << 16) | (s << 8) | s;
-        T2[x] = (s << 24) | (s3 << 16) | (s2 << 8) | s;
-        T3[x] = (s << 24) | (s << 16) | (s3 << 8) | s2;
+// Forward table encode SubByte + ShiftRows + MixColumns
+        T0[x] = (static_cast<uint32_t>(s2) << 24) |
+                (static_cast<uint32_t>(s) << 16) |
+                (static_cast<uint32_t>(s) << 8) |
+                (static_cast<uint32_t>(s3));
 
-//Decryption table (Using invS and inverse MixColumns)
-        uint8_t si = InvS[x];
-        uint8_t s9 = gfmul(si, 9);
-        uint8_t sb = gfmul(si, 11);
-        uint8_t sd = gfmul(si, 13);
-        uint8_t se = gfmul(si, 14);
+        T1[x] = (static_cast<uint32_t>(s3) << 24) |
+                (static_cast<uint32_t>(s2) << 16) |
+                (static_cast<uint32_t>(s) << 8) |
+                (static_cast<uint32_t>(s));
 
-        Td0[x] = (se << 24) | (s9 << 16) | (sd << 8) | sb;
-        Td1[x] = (sb << 24) | (se << 16) | (s9 << 8) | sd;
-        Td2[x] = (sd << 24) | (sb << 16) | (se << 8) | s9;
-        Td3[x] = (s9 << 24) | (sd << 16) | (sb << 8) | se;
+        T2[x] = (static_cast<uint32_t>(s) << 24) |
+                (static_cast<uint32_t>(s3) << 16) |
+                (static_cast<uint32_t>(s2) << 8) |
+                (static_cast<uint32_t>(s));
+
+        T3[x] = (static_cast<uint32_t>(s) << 24) |
+                (static_cast<uint32_t>(s) << 16) |
+                (static_cast<uint32_t>(s3) << 8) |
+                (static_cast<uint32_t>(s2));
+
+
+
+// Inverse table  InvSubByte + InvShitRow + InvMixColumns
+        Byte si = Inv_SBOX[x];
+        Byte s9 = gfmul(si, 9);
+        Byte sb = gfmul(si, 11);
+        Byte sd = gfmul(si, 13);
+        Byte se = gfmul(si, 14);
+
+        Td0[x] = (static_cast<uint32_t>(se) << 24) |
+                 (static_cast<uint32_t>(s9) << 16) |
+                 (static_cast<uint32_t>(sd) << 8) |
+                 (static_cast<uint32_t>(sb));
+
+        Td1[x] = (static_cast<uint32_t>(sb) << 24) |
+                 (static_cast<uint32_t>(se) << 16) |
+                 (static_cast<uint32_t>(s9) << 8) |
+                 (static_cast<uint32_t>(sd));
+
+
+        Td2[x] = (static_cast<uint32_t>(sd) << 24) |
+                 (static_cast<uint32_t>(sb) << 16) |
+                 (static_cast<uint32_t>(se) << 8) |
+                 (static_cast<uint32_t>(s9));
+
+        Td3[x] = (static_cast<uint32_t>(s9) << 24) |
+                 (static_cast<uint32_t>(sd) << 16) |
+                 (static_cast<uint32_t>(se) << 8) |
+                 (static_cast<uint32_t>(se));
     }
     tablesInit = true;
 }
 
 
-// ===== Constructor =====
-AESTTable::AESTTable(const std::vector<uint8_t>& key) {
+AesTTable::AesTTable(const std::vector<uint8_t>& key) {
     if (key.size() != 16) throw std::runtime_error("Key must be 16 bytes");
     if (!tablesInit) initTables(); // build T0....T3 tables once
     keyExpansion(key);       // Expand and store roundKeys
 }
 
-// ===== Key expansion =====
-void AESTTable::keyExpansion(const std::vector<uint8_t>& key) {
-    // TODO: implement AES-128 key schedule (44 words)
-    roundKeys.resize(44);
+// Key schedule (AES 128 bits to 44 words)
+void AesTTable::keyExpansion(const std::vector<uint8_t>& key) {
 
-    for(int i = 0; i < 4; i++){
-        roundKeys[i] = (key[4*i] << 24) | (key[4*i+1] << 16)
-                    | (key[4*i+2] << 8) | (key[4*i+3]);
+    roundKeys.resize(44);
+// first 4 words from key bytes
+    for(int i = 0; i < 4; ++i){
+        roundKeys[i] = (static_cast<uint32_t>(key[4*i+0])<< 24) |
+                       (static_cast<uint32_t>(key[4*i+1])<< 16) |
+                       (static_cast<uint32_t>(key[4*i+2]) << 8) | 
+                       (static_cast<uint32_t>(key[4*i+3]) << 0);
     }
- // Expand res:t: AES key schedule use round constants(Rcon).
- //Rcon[1] = 0x01
-//Rcon[2] = 0x02
-//Rcon[3] = 0x04
+ //Rcon[1] = 0x01,Rcon[2] = 0x02,Rcon[3] = 0x04
 //doubling each time in GF(2^8), with the irreducible polynomial
-//x^8 + x^4 + x^3 + x + 1                            //round Constant from 1- round 10
+//x^8 + x^4 + x^3 + x + 1, add 'u(hexadecimal)' mean unsigned integer literal,C++ teats literal as signed int by default
+//AES deal with *bitwise ' operation <<, XOR may generate unexpect error results
+//
     static const uint32_t Rcon[10] = {
-        0x01000000,0x02000000,0x04000000,0x08000000,0x10000000,
-        0x20000000,0x40000000,0x80000000,0x1B000000,0x36000000
+        0x01000000u,0x02000000u,0x04000000u,0x08000000u,0x10000000u,
+        0x20000000u,0x40000000u,0x80000000u,0x1B000000u,0x36000000u
     };
-    for (int i = 4; i < 44; i++) {
+    for (int i = 4; i < 44; ++i) {
         uint32_t temp = roundKeys[i-1];
         if (i % 4 == 0) {
             // RotWord
             temp = (temp << 8) | (temp >> 24);
 
             // SubWord
-            temp = (S[(temp >> 24) & 0xFF] << 24) |
-                (S[(temp >> 16) & 0xFF] << 16) |
-                (S[(temp >>  8) & 0xFF] << 8) |
-                (S[temp & 0xFF]);
+            temp = (static_cast<uint32_t>(SBOX[(temp >> 24) & 0xFF]) << 24) |
+                   (static_cast<uint32_t>(SBOX[(temp >> 16) & 0xFF]) << 16) |
+                   (static_cast<uint32_t>(SBOX[(temp >> 8)  & 0xFF]) << 8) |
+                   (static_cast<uint32_t>(SBOX[(temp     )  & 0xFF]) <<  0);
 
             // XOR Rcon
             temp ^= Rcon[(i/4) - 1];
@@ -146,9 +172,9 @@ void AESTTable::keyExpansion(const std::vector<uint8_t>& key) {
     }
 }
 
-// ===== Encrypt block =====
-void AESTTable::encryptBlock(const uint8_t in[16], uint8_t out[16]) const {
-    // TODO:
+// Encrypt a single 16-byte block using T table
+void AesTTable::encryptBlock(const uint8_t in[16], uint8_t out[16]) const {
+
     // 1. Load input into s0..s3
     // 2. Initial AddRoundKey
     // 3. Rounds 1..9 with T-tables
@@ -160,83 +186,83 @@ void AESTTable::encryptBlock(const uint8_t in[16], uint8_t out[16]) const {
     uint32_t s2 = (in[8]<<24)|(in[9]<<16)|(in[10]<<8)|in[11];
     uint32_t s3 = (in[12]<<24)|(in[13]<<16)|(in[14]<<8)|in[15];
 
-    // Initial round key
+    // Initial round key (word 0..3)
     s0 ^= roundKeys[0];
     s1 ^= roundKeys[1];
     s2 ^= roundKeys[2];
     s3 ^= roundKeys[3];
 
     // 9 main rounds (T-tables)
-    for (int round = 1; round < 10; round++) {
-        uint32_t t0 =
-            T0[s0 >> 24] ^
+    for (int r = 1; r <= 9; ++r) {
+        uint32_t t0 =T0[(s0 >> 24)] ^
             T1[(s1 >> 16) & 0xFF] ^
             T2[(s2 >> 8) & 0xFF] ^
-            T3[s3 & 0xFF] ^
-            roundKeys[4*round + 0];
+            T3[(s3     ) & 0xFF] ^
+            roundKeys[4*r + 0];
 
-        uint32_t t1 =
-            T0[s1 >> 24] ^
-            T1[(s2 >> 16) & 0xFF] ^
+        uint32_t t1 =T0[(s1 >> 24)] ^
+            T1[(s2 >> 16)& 0xFF] ^
             T2[(s3 >> 8) & 0xFF] ^
-            T3[s0 & 0xFF] ^
-            roundKeys[4*round + 1];
+            T3[(s0     ) & 0xFF] ^
+            roundKeys[4*r + 1];
 
-        uint32_t t2 =
-            T0[s2 >> 24] ^
+        uint32_t t2 = T0[(s2 >> 24)] ^
             T1[(s3 >> 16) & 0xFF] ^
             T2[(s0 >> 8) & 0xFF] ^
-            T3[s1 & 0xFF] ^
-            roundKeys[4*round + 2];
+            T3[(s1     ) & 0xFF] ^
+            roundKeys[4*r + 2];
 
-        uint32_t t3 =
-            T0[s3 >> 24] ^
+        uint32_t t3 = T0[(s3 >> 24)] ^
             T1[(s0 >> 16) & 0xFF] ^
             T2[(s1 >> 8) & 0xFF] ^
-            T3[s2 & 0xFF] ^
-            roundKeys[4*round + 3];
+            T3[(s2     ) & 0xFF] ^
+            roundKeys[4*r + 3];
 
         s0 = t0; s1 = t1; s2 = t2; s3 = t3;
     }
 
     // Final round (no MixColumns, only S-box + ShiftRows + AddRoundKey)
     uint32_t o0 =
-        (S[s0 >> 24] << 24) ^
-        (S[(s1 >> 16) & 0xFF] << 16) ^
-        (S[(s2 >> 8) & 0xFF] << 8) ^
-        (S[s3 & 0xFF]) ^
+        (static_cast<uint32_t>(SBOX[(s0 >> 24)]) << 24) ^
+        (static_cast<uint32_t>(SBOX[(s1 >> 16) & 0xFF])<< 16) ^
+        (static_cast<uint32_t>(SBOX[(s2 >> 8) & 0xFF])  << 8) ^
+        (static_cast<uint32_t>(SBOX[(s3     ) & 0xFF])      ) ^
         roundKeys[40];
 
     uint32_t o1 =
-        (S[s1 >> 24] << 24) ^
-        (S[(s2 >> 16) & 0xFF] << 16) ^
-        (S[(s3 >> 8) & 0xFF] << 8) ^
-        (S[s0 & 0xFF]) ^
+        (static_cast<uint32_t>(SBOX[(s1 >> 24)]) << 24) ^
+        (static_cast<uint32_t>(SBOX[(s2 >> 16) & 0xFF])<< 16) ^
+        (static_cast<uint32_t>(SBOX[(s3 >> 8) & 0xFF])  << 8) ^
+        (static_cast<uint32_t>(SBOX[(s0     ) & 0xFF])      ) ^
         roundKeys[41];
 
     uint32_t o2 =
-        (S[s2 >> 24] << 24) ^
-        (S[(s3 >> 16) & 0xFF] << 16) ^
-        (S[(s0 >> 8) & 0xFF] << 8) ^
-        (S[s1 & 0xFF]) ^
+        (static_cast<uint32_t>(SBOX[(s2 >> 24)]) << 24) ^
+        (static_cast<uint32_t>(SBOX[(s3 >> 16) & 0xFF])<< 16) ^
+        (static_cast<uint32_t>(SBOX[(s0 >> 8)  & 0xFF]) << 8) ^
+        (static_cast<uint32_t>(SBOX[(s1     )  & 0xFF]))      ^
         roundKeys[42];
 
     uint32_t o3 =
-        (S[s3 >> 24] << 24) ^
-        (S[(s0 >> 16) & 0xFF] << 16) ^
-        (S[(s1 >> 8) & 0xFF] << 8) ^
-        (S[s2 & 0xFF]) ^
+        (static_cast<uint32_t>(SBOX[(s3 >> 24)]) << 24) ^
+        (static_cast<uint32_t>(SBOX[(s0 >> 16) & 0xFF])<< 16) ^
+        (static_cast<uint32_t>(SBOX[(s1 >> 8) & 0xFF])  << 8) ^
+        (static_cast<uint32_t>(SBOX[(s2     ) & 0xFF])      ) ^
         roundKeys[43];
 
     // Store output as 16 bytes
-    out[0] = o0 >> 24; out[1] = o0 >> 16; out[2] = o0 >> 8; out[3] = o0;
-    out[4] = o1 >> 24; out[5] = o1 >> 16; out[6] = o1 >> 8; out[7] = o1;
-    out[8] = o2 >> 24; out[9] = o2 >> 16; out[10] = o2 >> 8; out[11] = o2;
-    out[12] = o3 >> 24; out[13] = o3 >> 16; out[14] = o3 >> 8; out[15] = o3;
+    out[ 0] = static_cast<Byte>(o0 >> 24); out[ 1] = static_cast<Byte>(o0 >> 16);
+    out[ 2] = static_cast<Byte>(o0 >>  8); out[ 3] = static_cast<Byte>(o0      );
+    out[ 4] = static_cast<Byte>(o1 >> 24); out[ 5] = static_cast<Byte>(o1 >> 16);
+    out[ 6] = static_cast<Byte>(o1 >>  8); out[ 7] = static_cast<Byte>(o1      );
+    out[ 8] = static_cast<Byte>(o2 >> 24); out[ 9] = static_cast<Byte>(o2 >> 16);
+    out[10] = static_cast<Byte>(o2 >>  8); out[11] = static_cast<Byte>(o2      );
+    out[12] = static_cast<Byte>(o3 >> 24); out[13] = static_cast<Byte>(o3 >> 16);
+    out[14] = static_cast<Byte>(o3 >>  8); out[15] = static_cast<Byte>(o3      );
 }
 
-// ===== Decrypt block =====
-void AESTTable::decryptBlock(const uint8_t in[16], uint8_t out[16]) const {
+//  Decrypt single 16-byte block using inverse T-table
+void AesTTable::decryptBlock(const uint8_t in[16], uint8_t out[16]) const {
     // Load state into 4 words
     uint32_t s0 = (in[0]<<24)|(in[1]<<16)|(in[2]<<8)|in[3];
     uint32_t s1 = (in[4]<<24)|(in[5]<<16)|(in[6]<<8)|in[7];
@@ -250,70 +276,83 @@ void AESTTable::decryptBlock(const uint8_t in[16], uint8_t out[16]) const {
     s3 ^= roundKeys[43];
 
     // 9 main inverse rounds (T-tables)
-    for (int round = 9; round > 0; round--) {
+    for (int r = 9; r >= 1; --r) {
         uint32_t t0 =
-            Td0[s0 >> 24] ^
-            Td1[(s3 >> 16) & 0xFF] ^
+            Td0[(s0 >> 24)      ] ^
+            Td1[(s3 >> 16)& 0xFF] ^
             Td2[(s2 >> 8) & 0xFF] ^
-            Td3[s1 & 0xFF] ^
-            roundKeys[4*round + 0];
+            Td3[(s1     ) & 0xFF] ^
+            roundKeys[4*r + 0];
 
         uint32_t t1 =
-            Td0[s1 >> 24] ^
+            Td0[(s1 >> 24)]        ^
             Td1[(s0 >> 16) & 0xFF] ^
-            Td2[(s3 >> 8) & 0xFF] ^
-            Td3[s2 & 0xFF] ^
-            roundKeys[4*round + 1];
+            Td2[(s3 >> 8) & 0xFF]  ^
+            Td3[(s2      ) & 0xFF] ^
+            roundKeys[4*r + 1];
 
         uint32_t t2 =
-            Td0[s2 >> 24] ^
+            Td0[(s2 >> 24)] ^
             Td1[(s1 >> 16) & 0xFF] ^
-            Td2[(s0 >> 8) & 0xFF] ^
-            Td3[s3 & 0xFF] ^
-            roundKeys[4*round + 2];
+            Td2[(s0 >> 8) & 0xFF]  ^
+            Td3[(s3     )& 0xFF]   ^
+            roundKeys[4*r + 2];
 
         uint32_t t3 =
             Td0[s3 >> 24] ^
-            Td1[(s2 >> 16) & 0xFF] ^
+            Td1[(s2 >> 16)& 0xFF] ^
             Td2[(s1 >> 8) & 0xFF] ^
-            Td3[s0 & 0xFF] ^
-            roundKeys[4*round + 3];
+            Td3[(s0     ) & 0xFF] ^
+            roundKeys[4* + 3];
 
         s0 = t0; s1 = t1; s2 = t2; s3 = t3;
     }
 
     // Final round (no InvMixColumns, only InvSubBytes + InvShiftRows + AddRoundKey)
     uint32_t o0 =
-        (InvS[s0 >> 24] << 24) ^
-        (InvS[(s3 >> 16) & 0xFF] << 16) ^
-        (InvS[(s2 >> 8) & 0xFF] << 8) ^
-        (InvS[s1 & 0xFF]) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s0 >> 24)]) << 24) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s3 >> 16) & 0xFF]) << 16) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s2 >>  8)  & 0xFF]) << 8) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s1      ) & 0xFF])      ) ^
         roundKeys[0];
 
     uint32_t o1 =
-        (InvS[s1 >> 24] << 24) ^
-        (InvS[(s0 >> 16) & 0xFF] << 16) ^
-        (InvS[(s3 >> 8) & 0xFF] << 8) ^
-        (InvS[s2 & 0xFF]) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s1 >> 24)]) << 24) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s0 >> 16) & 0xFF]) << 16) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s3 >> 8) & 0xFF]) << 8) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s2     ) & 0xFF])     ) ^
         roundKeys[1];
 
     uint32_t o2 =
-        (InvS[s2 >> 24] << 24) ^
-        (InvS[(s1 >> 16) & 0xFF] << 16) ^
-        (InvS[(s0 >> 8) & 0xFF] << 8) ^
-        (InvS[s3 & 0xFF]) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s2 >> 24)]) << 24) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s1 >> 16) & 0xFF]) << 16) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s0 >> 8) & 0xFF]) << 8) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s3     ) & 0xFF])      )^
         roundKeys[2];
 
     uint32_t o3 =
-        (InvS[s3 >> 24] << 24) ^
-        (InvS[(s2 >> 16) & 0xFF] << 16) ^
-        (InvS[(s1 >> 8) & 0xFF] << 8) ^
-        (InvS[s0 & 0xFF]) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s3 >> 24)]) << 24) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s2 >> 16) & 0xFF])<< 16) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s1 >> 8) & 0xFF]) << 8) ^
+        (static_cast<uint32_t>(Inv_SBOX[(s0     ) & 0xFF])    ) ^
         roundKeys[3];
 
     // Store output
-    out[0] = o0 >> 24; out[1] = o0 >> 16; out[2] = o0 >> 8; out[3] = o0;
-    out[4] = o1 >> 24; out[5] = o1 >> 16; out[6] = o1 >> 8; out[7] = o1;
-    out[8] = o2 >> 24; out[9] = o2 >> 16; out[10] = o2 >> 8; out[11] = o2;
-    out[12] = o3 >> 24; out[13] = o3 >> 16; out[14] = o3 >> 8; out[15] = o3;
+    out[ 0] = static_cast<Byte>(o0 >> 24); out[ 1] = static_cast<Byte>(o0 >> 16);
+    out[ 2] = static_cast<Byte>(o0 >>  8); out[ 3] = static_cast<Byte>(o0      );
+    out[ 4] = static_cast<Byte>(o1 >> 24); out[ 5] = static_cast<Byte>(o1 >> 16);
+    out[ 6] = static_cast<Byte>(o1 >>  8); out[ 7] = static_cast<Byte>(o1      );
+    out[ 8] = static_cast<Byte>(o2 >> 24); out[ 9] = static_cast<Byte>(o2 >> 16);
+    out[10] = static_cast<Byte>(o2 >>  8); out[11] = static_cast<Byte>(o2      );
+    out[12] = static_cast<Byte>(o3 >> 24); out[13] = static_cast<Byte>(o3 >> 16);
+    out[14] = static_cast<Byte>(o3 >>  8); out[15] = static_cast<Byte>(o3      );
 }
+
+void AesTTable::EncryptionFile(){
+    std::array<Byte,16> buf{}, out{};
+    std::ifstream f("..\\src\\input.jpg", std::ios::binary);
+    std::ofstream g("..\\src\\output_ttable.jpg", std::ios::binary);
+    if (!f || !g) { std::perror("open"); return; }
+
+}
+
