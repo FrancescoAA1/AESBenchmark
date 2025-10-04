@@ -348,11 +348,4 @@ void AesTTable::decryptBlock(const uint8_t in[16], uint8_t out[16]) const {
     out[14] = static_cast<Byte>(o3 >>  8); out[15] = static_cast<Byte>(o3      );
 }
 
-void AesTTable::EncryptionFile(){
-    std::array<Byte,16> buf{}, out{};
-    std::ifstream f("..\\src\\input.jpg", std::ios::binary);
-    std::ofstream g("..\\src\\output_ttable.jpg", std::ios::binary);
-    if (!f || !g) { std::perror("open"); return; }
-
-}
 
