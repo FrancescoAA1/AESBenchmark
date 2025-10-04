@@ -31,6 +31,7 @@ int main() {
     //Byte ** data = aes.createState(state, 16);
     aes.displayState(data);
 
+
     //
     //
     //
@@ -43,12 +44,7 @@ int main() {
         0x7D, 0x44, 0x11, 0x9E
     };
 
-    AES a(key);
-
-
-
-    
-
+    AES aesN(key);
 //test optimized AES(AES table)
 //   std::cout << "\n=== AES-128 T-Table Test ===\n";
 

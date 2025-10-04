@@ -6,5 +6,5 @@ include_directories(include)
 enable_testing()
 
 
-add_executable(AES src/main.cpp src/aes_naive.cpp src/aes_ttable.cpp)
+add_executable(AES src/main.cpp src/aes_naive.cpp src/aes.cpp src/aes_ttable.cpp)
 set_property( TARGET AES PROPERTY CMAKE_CXX_STANDARD 17)
