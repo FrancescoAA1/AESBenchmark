@@ -24,7 +24,7 @@ using Word = std::array<Byte, N_ROWS>;
 using State = std::array<std::array<Byte, N_COLS>, N_ROWS>;
 using Key = std::array<Byte, BLOCK_SIZE>;
 using ExpandedKey = std::array<Key, EXPANDED_KEY_WORDS>; 
-
+using Block = std::array<Byte, BLOCK_SIZE>;
 
 
 class AES {
@@ -60,12 +60,12 @@ class AES {
     void add_round_key(State& state, const Key& key);
 
     //Key expansion 
-    ExpandedKey key_expansion(const std::array<Byte, BLOCK_SIZE>& key);
+    ExpandedKey key_expansion(const Block& key);
     Word rotate_word(const Word& word);
     Word sub_word_bytes(const Word& word);
 
     // Helpers
-    State bytes_to_state(const std::array<Byte, BLOCK_SIZE>& block);
+    State bytes_to_state(const Block& block);
     std::array<Byte, BLOCK_SIZE> state_to_bytes(const State& state);
     std::vector<Byte> pad_message(const std::vector<Byte>& message);
     std::vector<Byte> unpad_message(const std::vector<Byte>& message);
@@ -74,8 +74,8 @@ class AES {
     static Byte Xtime(Byte a);
 
     //Block encryption/decryption
-    std::array<Byte, BLOCK_SIZE> encrypt_block(const std::array<Byte, BLOCK_SIZE>& block);
-    std::array<Byte, BLOCK_SIZE> decrypt_block(const std::array<Byte, BLOCK_SIZE>& block);    
+    std::array<Byte, BLOCK_SIZE> encrypt_block(const Block& block);
+    std::array<Byte, BLOCK_SIZE> decrypt_block(const Block& block);    
 };
 
 #endif
