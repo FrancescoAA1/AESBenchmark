@@ -1,6 +1,4 @@
 //Header guards
-#pragma once
-
 #ifndef AES_H
 #define AES_H
 
@@ -15,7 +13,7 @@ constexpr int N_ROWS = 4;
 constexpr int N_COLS = 4;
 constexpr int NUM_ROUNDS = 10;
 constexpr int KEY_WORDS = 4;
-constexpr int EXPANDED_KEY_WORDS = (NUM_ROUNDS+1)*KEY_WORDS;
+constexpr int EXPANDED_KEY_WORDS = (NUM_ROUNDS + 1)*KEY_WORDS;
 constexpr int S_BOX_SIZE = 256;
 
 //Aliases for clarity
@@ -23,7 +21,7 @@ using Byte = std::uint8_t;
 using Word = std::array<Byte, N_ROWS>;
 using State = std::array<std::array<Byte, N_COLS>, N_ROWS>;
 using Key = std::array<Byte, BLOCK_SIZE>;
-using ExpandedKey = std::array<Key, EXPANDED_KEY_WORDS>; //TO BE CHANGED!!!
+using ExpandedKey = std::array<Word, EXPANDED_KEY_WORDS>; //TO BE CHANGED!!!
 using Block = std::array<Byte, BLOCK_SIZE>;
 
 
@@ -31,7 +29,7 @@ class AES {
     public:
         
     //Constructor
-    explicit AES(const std::array<Byte, BLOCK_SIZE>& key);
+    explicit AES(const Key& key);
 
     //Main functions
     std::vector<Byte> encrypt_message(const std::vector<Byte>& message);
@@ -60,9 +58,10 @@ class AES {
     void add_round_key(State& state, const Key& key);
 
     //Key expansion 
-    ExpandedKey key_expansion(const Block& key);
+    ExpandedKey key_expansion(const Key& key);
     Word rotate_word(const Word& word);
     Word sub_word_bytes(const Word& word);
+    Key get_round_key(int round);
 
     // Helpers
     State bytes_to_state(const Block& block);

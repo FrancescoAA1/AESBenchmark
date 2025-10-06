@@ -73,9 +73,40 @@ constexpr std::array<std::array<Byte, N_COLS>, N_ROWS> AES::MIX_COL_MATRIX_INV =
                                                                                    {0x0b, 0x0d, 0x09, 0x0e}}};
 
 // Constructor
-AES::AES(const array<Byte, BLOCK_SIZE> &key) : key_(key)
+AES::AES(const Key &key) : key_(key)
 {
     round_keys_ = key_expansion(key_);
+}
+
+std::vector<Byte> AES::encrypt_message(const vector<Byte> &message)
+{
+    vector<Byte> padded_message = pad_message(message);
+    vector<Byte> ciphertext;
+
+    for (size_t i = 0; i < padded_message.size(); i += BLOCK_SIZE)
+    {
+        Block block{};
+        copy(padded_message.begin() + i, padded_message.begin() + i + BLOCK_SIZE, block.begin());
+        array<Byte, BLOCK_SIZE> encrypted_block = encrypt_block(block);
+        ciphertext.insert(ciphertext.end(), encrypted_block.begin(), encrypted_block.end());
+    }
+
+    return ciphertext;
+}
+
+std::vector<Byte> AES::decrypt_message(const vector<Byte> &ciphertext)
+{
+    vector<Byte> decrypted_message;
+
+    for (size_t i = 0; i < ciphertext.size(); i += BLOCK_SIZE)
+    {
+        Block block{};
+        copy(ciphertext.begin() + i, ciphertext.begin() + i + BLOCK_SIZE, block.begin());
+        array<Byte, BLOCK_SIZE> decrypted_block = decrypt_block(block);
+        decrypted_message.insert(decrypted_message.end(), decrypted_block.begin(), decrypted_block.end());
+    }
+
+    return unpad_message(decrypted_message);
 }
 
 //For each byte of the state matrix, substitute it with the corresponding byte in the S-Box
@@ -178,8 +209,23 @@ void AES::add_round_key(State &state, const Key &key)
     }
 }
 
+//Combines 4 words from the expanded key into a single round key
+Key AES::get_round_key(int round) {
 
-ExpandedKey AES::key_expansion(const Block &key)
+    Key round_key{};
+
+    for (int col = 0; col < N_COLS; ++col) 
+    {
+        for (int row = 0; row < N_ROWS; ++row) 
+        {
+            round_key[col * N_ROWS + row] = round_keys_[round * 4 + col][row];
+        }
+    }
+    return round_key;
+}
+
+
+ExpandedKey AES::key_expansion(const Key &key)
 {
     /*
         1) Initialize the first 4 words (W[0..3]) directly from the key
@@ -197,36 +243,36 @@ ExpandedKey AES::key_expansion(const Block &key)
     ExpandedKey expanded_key{}; // 44 words //TO BE FIXED!!!
 
     // Step 1: Initialize W[0..3] from the key
-    // for(int i = 0; i < KEY_WORDS; ++i)
-    // {
-    //     for(int j = 0; j < N_ROWS; ++j)
-    //     {
-    //         expanded_key[i][j] = key[i * N_ROWS + j];
-    //     }
-    // }
+    for(int i = 0; i < KEY_WORDS; ++i)
+    {
+        for(int j = 0; j < N_ROWS; ++j)
+        {
+            expanded_key[i][j] = key[i * N_ROWS + j];
+        }
+    }
 
-    // // Step 2: Generate W[i] for i >= 4
-    // for(int i = KEY_WORDS; i < EXPANDED_KEY_WORDS; ++i)
-    // {
-    //     Word temp = expanded_key[i - 1]; // previous word
+    // Step 2: Generate W[i] for i >= 4
+    for(int i = KEY_WORDS; i < EXPANDED_KEY_WORDS; ++i)
+    {
+        Word temp = expanded_key[i - 1]; // previous word
 
-    //     if(i % KEY_WORDS == 0)
-    //     {
-    //         // a) i mod 4 == 0: rotate, substitute, XOR with RCON
-    //         temp = rotate_word(temp);
-    //         temp = sub_word_bytes(temp);
-    //         for(int j = 0; j < N_ROWS; ++j)
-    //         {
-    //             temp[j] ^= RCON[i / KEY_WORDS - 1][j];
-    //         }
-    //     }
+        if(i % KEY_WORDS == 0)
+        {
+            // a) i mod 4 == 0: rotate, substitute, XOR with RCON
+            temp = rotate_word(temp);
+            temp = sub_word_bytes(temp);
+            for(int j = 0; j < N_ROWS; ++j)
+            {
+                temp[j] ^= RCON[i / KEY_WORDS - 1][j];
+            }
+        }
 
-    //     // b) Otherwise: XOR with word 4 positions earlier
-    //     for(int j = 0; j < N_ROWS; ++j)
-    //     {
-    //         expanded_key[i][j] = expanded_key[i - KEY_WORDS][j] ^ temp[j];
-    //     }
-    // }
+        // b) Otherwise: XOR with word 4 positions earlier
+        for(int j = 0; j < N_ROWS; ++j)
+        {
+            expanded_key[i][j] = expanded_key[i - KEY_WORDS][j] ^ temp[j];
+        }
+    }
 
     return expanded_key;
 }
@@ -289,7 +335,7 @@ std::array<Byte, BLOCK_SIZE> AES::state_to_bytes(const State &state)
 
 
 
-std::vector<Byte> pad_message(const std::vector<Byte> &message)
+std::vector<Byte> AES::pad_message(const std::vector<Byte> &message)
 {
     int remainder = message.size() % BLOCK_SIZE;
 
@@ -304,7 +350,7 @@ std::vector<Byte> pad_message(const std::vector<Byte> &message)
     return padded;
 }
 
-std::vector<Byte> unpad_message(const std::vector<Byte> &message)
+std::vector<Byte> AES::unpad_message(const std::vector<Byte> &message)
 {
     if(message.empty() || message.size() % BLOCK_SIZE != 0)
     {
@@ -357,19 +403,19 @@ std::array<Byte, BLOCK_SIZE> AES::encrypt_block(const Block &block)
 {
     State state = bytes_to_state(block);
 
-    add_round_key(state, round_keys_[0]);
+    add_round_key(state, get_round_key(0));
 
     for(int round = 1; round < NUM_ROUNDS; round++)
     {
         sub_bytes(state);
         shift_rows(state);
         mix_columns(state);
-        add_round_key(state, round_keys_[round]);
+        add_round_key(state, get_round_key(round));
     }
 
     sub_bytes(state);
     shift_rows(state);
-    add_round_key(state, round_keys_[NUM_ROUNDS]);
+    add_round_key(state, get_round_key(NUM_ROUNDS));
 
     return state_to_bytes(state);
 }
@@ -378,19 +424,20 @@ std::array<Byte, BLOCK_SIZE> AES::decrypt_block(const Block &block)
 {
     State state = bytes_to_state(block);
 
-    add_round_key(state, round_keys_[NUM_ROUNDS]);
+    add_round_key(state, get_round_key(NUM_ROUNDS));
 
     for(int round = NUM_ROUNDS - 1; round >= 1; round--)
     {
         inv_shift_rows(state);
         inv_sub_bytes(state);
-        add_round_key(state, round_keys_[round]);
+        add_round_key(state, get_round_key(round));
         inv_mix_columns(state);
     }
 
     inv_shift_rows(state);
     inv_sub_bytes(state);
-    add_round_key(state, round_keys_[0]);
+    add_round_key(state, get_round_key(0));
 
     return state_to_bytes(state);
 }
+

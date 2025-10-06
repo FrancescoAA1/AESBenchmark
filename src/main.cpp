@@ -32,19 +32,36 @@ int main() {
     aes.displayState(data);
 
 
-    //
-    //
-    //
+    
+    
+    
 
+    //---------------- Test AES-128 Naive (aes.h) ---------------
 
-    array<Byte, BLOCK_SIZE> key = {
+    cout << "\n=== AES-128 Naive Test ===\n \n";
+
+    Key key = {
         0x7A, 0x1F, 0x93, 0x04,
         0xC5, 0xE2, 0x9B, 0x16,
         0xA8, 0x3C, 0x5E, 0xF1,
         0x7D, 0x44, 0x11, 0x9E
     };
 
-    AES aesN(key);
+    AES naive(key);
+
+    string text = "Hasta la vista, baby!";
+    cout << "Message: " + text << endl;
+    vector<Byte> message(text.begin(), text.end());
+
+    vector<Byte> ciphertext = naive.encrypt_message(message);
+    string cipher_text_str(ciphertext.begin(), ciphertext.end());
+    cout << "Ciphertext: " + cipher_text_str << endl;
+
+    vector<Byte> decrypted = naive.decrypt_message(ciphertext);
+    string decrypted_text(decrypted.begin(), decrypted.end());
+    cout << "Decrypted message: " + decrypted_text << endl;
+
+
 //test optimized AES(AES table)
 //   std::cout << "\n=== AES-128 T-Table Test ===\n";
 
