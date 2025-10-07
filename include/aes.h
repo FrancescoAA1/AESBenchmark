@@ -21,7 +21,7 @@ using Byte = std::uint8_t;
 using Word = std::array<Byte, N_ROWS>;
 using State = std::array<std::array<Byte, N_COLS>, N_ROWS>;
 using Key = std::array<Byte, BLOCK_SIZE>;
-using ExpandedKey = std::array<Word, EXPANDED_KEY_WORDS>; //TO BE CHANGED!!!
+using ExpandedKey = std::array<Word, EXPANDED_KEY_WORDS>;
 using Block = std::array<Byte, BLOCK_SIZE>;
 
 
