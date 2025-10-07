@@ -4,15 +4,15 @@
 #include<array>
 #include<vector>
 
-// Constants
-constexpr int T_TABLE_SIZE = 256;
+#include "aes_constants.h"
+
 
 // Type aliases
 using Byte = std::uint8_t;
 using Word = std::array<Byte, N_ROWS>;
 using State = std::array<std::array<Byte, N_COLS>, N_ROWS>;
 using Key = std::array<Byte, BLOCK_SIZE>;
-using ExpandedKey = std::array<std::uint32_t, EXPANDED_KEY_WORDS>;
+using RoundKey = std::array<std::uint32_t, EXPANDED_KEY_WORDS>;
 using Block = std::array<Byte, BLOCK_SIZE>;
 
 class AesTTable {
@@ -35,7 +35,7 @@ private:
     // Round key (AES 128 bit--44 words of 32 bits)
 
     Key key_;
-    ExpandedKey roundKeys;
+    RoundKey roundKeys;
 
     // Lookup tables (static)
     static const std::array<Byte, S_BOX_SIZE> S_BOX;

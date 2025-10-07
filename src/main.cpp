@@ -10,6 +10,8 @@
 #include <aes_ttable.h>
 #include <aes.h>
 
+#include "aes_constants.h"
+
 using namespace std;
 
 using Byte = std::uint8_t;

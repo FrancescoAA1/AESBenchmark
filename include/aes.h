@@ -6,15 +6,7 @@
 #include <array>
 #include <vector>
 
-
-//Constants
-constexpr int BLOCK_SIZE = 16;
-constexpr int N_ROWS = 4;
-constexpr int N_COLS = 4;
-constexpr int NUM_ROUNDS = 10;
-constexpr int KEY_WORDS = 4;
-constexpr int EXPANDED_KEY_WORDS = (NUM_ROUNDS + 1)*KEY_WORDS;
-constexpr int S_BOX_SIZE = 256;
+#include "aes_constants.h"
 
 //Aliases for clarity
 using Byte = std::uint8_t;

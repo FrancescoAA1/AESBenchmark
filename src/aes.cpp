@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "../include/aes.h"
+#include "../include/aes_constants.h"
 
 using namespace std;
 
