@@ -37,7 +37,7 @@ class AES {
     static const std::array<Word, NUM_ROUNDS> RCON;
 
     //State and Words are temporary, they do not constitue class fields
-    std::array<Byte, BLOCK_SIZE> key_;
+    Key key_;
     ExpandedKey round_keys_;
 
     //Operations on the state
@@ -65,8 +65,8 @@ class AES {
     static Byte Xtime(Byte a);
 
     //Block encryption/decryption
-    std::array<Byte, BLOCK_SIZE> encrypt_block(const Block& block);
-    std::array<Byte, BLOCK_SIZE> decrypt_block(const Block& block);    
+    Block encrypt_block(const Block& block);
+    Block decrypt_block(const Block& block);    
 };
 
 #endif
