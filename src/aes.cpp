@@ -63,10 +63,14 @@ constexpr std::array<std::array<Byte, KEY_WORDS>, NUM_ROUNDS> AES::RCON = {{{0x0
                                                                             {0x1B, 0x00, 0x00, 0x00},
                                                                             {0x36, 0x00, 0x00, 0x00}}};
 
+// MixColumns transformation matrix: each column of the state is multiplied by this matrix
+
 constexpr std::array<std::array<Byte, N_COLS>, N_ROWS> AES::MIX_COL_MATRIX = {{{0x02, 0x03, 0x01, 0x01},
                                                                                {0x01, 0x02, 0x03, 0x01},
                                                                                {0x01, 0x01, 0x02, 0x03},
                                                                                {0x03, 0x01, 0x01, 0x02}}};
+
+// Inverse MixColumns transformation matrix: each column of the state is multiplied by this matrix
 
 constexpr std::array<std::array<Byte, N_COLS>, N_ROWS> AES::MIX_COL_MATRIX_INV = {{{0x0e, 0x0b, 0x0d, 0x09},
                                                                                    {0x09, 0x0e, 0x0b, 0x0d},
@@ -74,6 +78,7 @@ constexpr std::array<std::array<Byte, N_COLS>, N_ROWS> AES::MIX_COL_MATRIX_INV =
                                                                                    {0x0b, 0x0d, 0x09, 0x0e}}};
 
 // Constructor
+// We assign the key and generate the round keys using key expansion
 AES::AES(const Key &key) : key_(key)
 {
     round_keys_ = key_expansion(key_);
@@ -81,20 +86,33 @@ AES::AES(const Key &key) : key_(key)
 
 std::vector<Byte> AES::encrypt_message(const vector<Byte> &message)
 {
+    // Pad the message to be a multiple of BLOCK_SIZE
     vector<Byte> padded_message = pad_message(message);
+
+    // Will contain the final ciphertext made of encrypted blocks
     vector<Byte> ciphertext;
 
+    // For each 16-byte block, encrypt it and append it to the ciphertext
+    // We repeat until the size of the padded message
     for (size_t i = 0; i < padded_message.size(); i += BLOCK_SIZE)
     {
         Block block{};
+
+        // We use std::copy to copy the block from the message to the Block array
         copy(padded_message.begin() + i, padded_message.begin() + i + BLOCK_SIZE, block.begin());
+
+        // Encrypt the block
         array<Byte, BLOCK_SIZE> encrypted_block = encrypt_block(block);
+
+        // Adding the encrypted block to the ciphertext
         ciphertext.insert(ciphertext.end(), encrypted_block.begin(), encrypted_block.end());
     }
 
     return ciphertext;
 }
 
+// The process is similar to encryption, but we use the decryption functions
+//  and apply them in reverse order
 std::vector<Byte> AES::decrypt_message(const vector<Byte> &ciphertext)
 {
     vector<Byte> decrypted_message;
@@ -110,65 +128,70 @@ std::vector<Byte> AES::decrypt_message(const vector<Byte> &ciphertext)
     return unpad_message(decrypted_message);
 }
 
-//For each byte of the state matrix, substitute it with the corresponding byte in the S-Box
+// First operation of the encryption process (in the looping rounds)
+//  For each byte of the state matrix, substitute it with the corresponding byte in the S-Box
 void AES::sub_bytes(State &state)
 {
-    for(int row = 0; row < N_ROWS; row++)
+    for (int row = 0; row < N_ROWS; row++)
     {
-        for(int col = 0; col < N_COLS; col++)
+        for (int col = 0; col < N_COLS; col++)
         {
             state[row][col] = S_BOX[state[row][col]];
         }
     }
 }
 
-//For each byte of the state matrix, substitute it with the corresponding byte in the Inverse S-Box
+// For each byte of the state matrix, substitute it with the corresponding byte in the Inverse S-Box
 void AES::inv_sub_bytes(State &state)
 {
-    for(int row = 0; row < N_ROWS; row++)
+    for (int row = 0; row < N_ROWS; row++)
     {
-        for(int col = 0; col < N_COLS; col++)
+        for (int col = 0; col < N_COLS; col++)
         {
             state[row][col] = INV_S_BOX[state[row][col]];
         }
     }
 }
 
+// Second operation of the encryption process (in the looping rounds)
 void AES::shift_rows(State &state)
 {
-    //Row 0: No shift
+    // Row 0: No shift
 
-    //Row 1: Shift left by 1
-    
-    //std::rotate(begin, middle, end) rotates the range [begin, end) 
-    //in such a way that the element pointed by middle becomes the new first element.
+    // Row 1: Shift left by 1
+
+    // std::rotate(begin, middle, end) rotates the range [begin, end)
+    // in such a way that the element pointed by middle becomes the new first element.
     rotate(state[1].begin(), state[1].begin() + 1, state[1].end());
 
-    //Row 2: Shift left by 2
+    // Row 2: Shift left by 2
     rotate(state[2].begin(), state[2].begin() + 2, state[2].end());
 
-    //Row 3: Shift left by 3 (or right by 1)
+    // Row 3: Shift left by 3 (or right by 1)
     rotate(state[3].begin(), state[3].begin() + 3, state[3].end());
-
 }
 
 void AES::inv_shift_rows(State &state)
 {
-    //Row 0: No shift
+    // Row 0: No shift
 
-    //Row 1: Shift right by 1
+    // Row 1: Shift right by 1
     rotate(state[1].begin(), state[1].begin() + 3, state[1].end());
 
-    //Row 2: Shift right by 2
+    // Row 2: Shift right by 2
     rotate(state[2].begin(), state[2].begin() + 2, state[2].end());
 
-    //Row 3: Shift right by 3 (or left by 1)
+    // Row 3: Shift right by 3 (or left by 1)
     rotate(state[3].begin(), state[3].begin() + 1, state[3].end());
 }
 
+// Third operation of the encryption process (in the looping rounds)
+
+// Each column of the state is multiplied by a fixed polynomial c(x)= {03}x^3 + {01}x^2 + {01}x + {02}
+// The mix col matrix in the AES class contains the coefficients of this polynomial
 void AES::mix_columns(State &state)
 {
-    for(int col = 0; col < N_COLS; col++)
+    for (int col = 0; col < N_COLS; col++)
     {
         Byte s0 = state[0][col];
         Byte s1 = state[1][col];
@@ -184,7 +207,7 @@ void AES::mix_columns(State &state)
 
 void AES::inv_mix_columns(State &state)
 {
-    for(int col = 0; col < N_COLS; col++)
+    for (int col = 0; col < N_COLS; col++)
     {
         Byte s0 = state[0][col];
         Byte s1 = state[1][col];
@@ -198,33 +221,33 @@ void AES::inv_mix_columns(State &state)
     }
 }
 
-//XORing each byte of the state with the corresponding byte of the round key
+// XORing each byte of the state with the corresponding byte of the round key
 void AES::add_round_key(State &state, const Key &key)
 {
-    for(int row = 0; row < N_ROWS; row++)
+    for (int row = 0; row < N_ROWS; row++)
     {
-        for(int col = 0; col < N_COLS; col++)
+        for (int col = 0; col < N_COLS; col++)
         {
             state[row][col] ^= key[col * N_ROWS + row];
         }
     }
 }
 
-//Combines 4 words from the expanded key into a single round key
-Key AES::get_round_key(int round) {
+// Combines 4 words from the expanded key into a single round key
+Key AES::get_round_key(int round)
+{
 
     Key round_key{};
 
-    for (int col = 0; col < N_COLS; ++col) 
+    for (int col = 0; col < N_COLS; ++col)
     {
-        for (int row = 0; row < N_ROWS; ++row) 
+        for (int row = 0; row < N_ROWS; ++row)
         {
             round_key[col * N_ROWS + row] = round_keys_[round * 4 + col][row];
         }
     }
     return round_key;
 }
-
 
 ExpandedKey AES::key_expansion(const Key &key)
 {
@@ -244,32 +267,32 @@ ExpandedKey AES::key_expansion(const Key &key)
     ExpandedKey expanded_key{}; // 44 words //TO BE FIXED!!!
 
     // Step 1: Initialize W[0..3] from the key
-    for(int i = 0; i < KEY_WORDS; ++i)
+    for (int i = 0; i < KEY_WORDS; ++i)
     {
-        for(int j = 0; j < N_ROWS; ++j)
+        for (int j = 0; j < N_ROWS; ++j)
         {
             expanded_key[i][j] = key[i * N_ROWS + j];
         }
     }
 
     // Step 2: Generate W[i] for i >= 4
-    for(int i = KEY_WORDS; i < EXPANDED_KEY_WORDS; ++i)
+    for (int i = KEY_WORDS; i < EXPANDED_KEY_WORDS; ++i)
     {
         Word temp = expanded_key[i - 1]; // previous word
 
-        if(i % KEY_WORDS == 0)
+        if (i % KEY_WORDS == 0)
         {
             // a) i mod 4 == 0: rotate, substitute, XOR with RCON
             temp = rotate_word(temp);
             temp = sub_word_bytes(temp);
-            for(int j = 0; j < N_ROWS; ++j)
+            for (int j = 0; j < N_ROWS; ++j)
             {
                 temp[j] ^= RCON[i / KEY_WORDS - 1][j];
             }
         }
 
-        // b) Otherwise: XOR with word 4 positions earlier
-        for(int j = 0; j < N_ROWS; ++j)
+        // b) Otherwise XOR with word 4 positions earlier
+        for (int j = 0; j < N_ROWS; ++j)
         {
             expanded_key[i][j] = expanded_key[i - KEY_WORDS][j] ^ temp[j];
         }
@@ -278,10 +301,11 @@ ExpandedKey AES::key_expansion(const Key &key)
     return expanded_key;
 }
 
-
 Word AES::rotate_word(const Word &word)
 {
     Word rotated = word;
+    // Rotating left by 1 position
+    // Used for key expansion when i mod 4 == 0
     std::rotate(rotated.begin(), rotated.begin() + 1, rotated.end());
     return rotated;
 }
@@ -289,11 +313,11 @@ Word AES::rotate_word(const Word &word)
 Word AES::sub_word_bytes(const Word &word)
 {
     Word subbed = word;
-    for(int i = 0; i < N_ROWS; i++)
+    for (int i = 0; i < N_ROWS; i++)
     {
-        //Substituting each byte in the word with the corresponding byte in the S-Box
-        //Using static_cast to ensure we are using uint8_t as index
-        //C++ treats char as signed int by default
+        // Substituting each byte in the word with the corresponding byte in the S-Box
+        // Using static_cast to ensure we are using uint8_t as index
+        // C++ treats char as signed int by default
         subbed[i] = S_BOX[static_cast<std::uint8_t>(subbed[i])];
     }
 
@@ -307,7 +331,7 @@ State AES::bytes_to_state(const Block &block)
 {
     State state{};
 
-    for(int i=0; i < BLOCK_SIZE; i++)
+    for (int i = 0; i < BLOCK_SIZE; i++)
     {
         int row = i % N_ROWS;
         int col = i / N_ROWS;
@@ -323,9 +347,9 @@ std::array<Byte, BLOCK_SIZE> AES::state_to_bytes(const State &state)
 {
     Block block{};
 
-    for(int col=0; col < N_COLS; col++)
+    for (int col = 0; col < N_COLS; col++)
     {
-        for(int row=0; row <N_ROWS; row++)
+        for (int row = 0; row < N_ROWS; row++)
         {
             block[col * N_ROWS + row] = state[row][col];
         }
@@ -334,18 +358,18 @@ std::array<Byte, BLOCK_SIZE> AES::state_to_bytes(const State &state)
     return block;
 }
 
-
-
 std::vector<Byte> AES::pad_message(const std::vector<Byte> &message)
 {
+    // Calculate the number of padding bytes needed
     int remainder = message.size() % BLOCK_SIZE;
 
-    int padding_length = remainder !=0 ? BLOCK_SIZE - remainder : BLOCK_SIZE;
+    // If the message is already a multiple of BLOCK_SIZE, we need to add a full block of padding
+    int padding_length = remainder != 0 ? BLOCK_SIZE - remainder : BLOCK_SIZE;
 
-    //We make padded because the parameter is const reference, and we need a modifiable local copy.
+    // We make padded because the parameter is const reference, and we need a modifiable local copy.
     std::vector<Byte> padded = message;
 
-    //adding the padding bytes
+    // adding the padding bytes
     padded.insert(padded.end(), padding_length, static_cast<Byte>(padding_length));
 
     return padded;
@@ -353,20 +377,20 @@ std::vector<Byte> AES::pad_message(const std::vector<Byte> &message)
 
 std::vector<Byte> AES::unpad_message(const std::vector<Byte> &message)
 {
-    if(message.empty() || message.size() % BLOCK_SIZE != 0)
+    // Check if the message size is valid
+    if (message.empty() || message.size() % BLOCK_SIZE != 0)
     {
         throw std::runtime_error("Invalid padded message size");
     }
 
-    //Get the last byte to determine padding length
+    // Get the last byte to determine padding length
     Byte padding_length = message.back();
 
-    //Remove padding bytes and return
+    // Remove padding bytes and return
     return std::vector<Byte>(message.begin(), message.end() - padding_length);
 }
 
-
-/*We rotate 1 bit to the left then look at first bit 
+/*We rotate 1 bit to the left then look at first bit
 if it is 1 we need to xor with 0x1B (which is the modolus x^8 + x^4 + x^3 + x + 1)
 otherwise we do nothing (ie xor with 0x00)
 
@@ -384,7 +408,7 @@ Byte AES::GF_mul(Byte a, Byte b)
     if (b == 2)
         return Xtime(a);
     if (b == 3)
-        return Xtime(a) ^ a;    
+        return Xtime(a) ^ a;
     if (b == 9)
         return Xtime(Xtime(Xtime(a))) ^ a;
     if (b == 11)
@@ -398,15 +422,17 @@ Byte AES::GF_mul(Byte a, Byte b)
     return 0;
 }
 
-
 // Block encryption/decryption
 std::array<Byte, BLOCK_SIZE> AES::encrypt_block(const Block &block)
 {
     State state = bytes_to_state(block);
 
+    // Initial round key addition
+    // Get round key is used to extract the first round key as a Word array
     add_round_key(state, get_round_key(0));
 
-    for(int round = 1; round < NUM_ROUNDS; round++)
+    // Main rounds where we do sub_bytes, shift_rows, mix_columns, add_round_key
+    for (int round = 1; round < NUM_ROUNDS; round++)
     {
         sub_bytes(state);
         shift_rows(state);
@@ -414,6 +440,7 @@ std::array<Byte, BLOCK_SIZE> AES::encrypt_block(const Block &block)
         add_round_key(state, get_round_key(round));
     }
 
+    // Final round (no mix_columns)
     sub_bytes(state);
     shift_rows(state);
     add_round_key(state, get_round_key(NUM_ROUNDS));
@@ -421,13 +448,14 @@ std::array<Byte, BLOCK_SIZE> AES::encrypt_block(const Block &block)
     return state_to_bytes(state);
 }
 
+// The decryption process is the reverse of encryption
 std::array<Byte, BLOCK_SIZE> AES::decrypt_block(const Block &block)
 {
     State state = bytes_to_state(block);
 
     add_round_key(state, get_round_key(NUM_ROUNDS));
 
-    for(int round = NUM_ROUNDS - 1; round >= 1; round--)
+    for (int round = NUM_ROUNDS - 1; round >= 1; round--)
     {
         inv_shift_rows(state);
         inv_sub_bytes(state);
@@ -441,4 +469,3 @@ std::array<Byte, BLOCK_SIZE> AES::decrypt_block(const Block &block)
 
     return state_to_bytes(state);
 }
-

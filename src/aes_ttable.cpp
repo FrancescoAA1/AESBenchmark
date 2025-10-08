@@ -6,7 +6,6 @@
 #include <iostream>
 #include <iomanip>
 
-
 #include "../include/aes_ttable.h"
 #include "../include/aes_constants.h"
 
@@ -76,41 +75,58 @@ std::array<std::uint32_t, T_TABLE_SIZE> AesTTable::Td1;
 std::array<std::uint32_t, T_TABLE_SIZE> AesTTable::Td2;
 std::array<std::uint32_t, T_TABLE_SIZE> AesTTable::Td3;
 
-void AesTTable::print_Ttable(const std::array<uint32_t, 256>& table, const std::string& name) {
-    std::cout << name << " = {\n";
-    for (int i = 0; i < 256; ++i) {
-        std::cout << "0x" << std::hex << std::setw(8) << std::setfill('0') 
-                  << table[i];
-        if (i != 255) std::cout << ", ";
-        if ((i+1) % 8 == 0) std::cout << "\n";
-    }
-    std::cout << "};\n" << std::dec;
-}
-
 AesTTable::AesTTable(const Key &key) : key_(key)
 {
     round_keys_ = key_expansion(key);
+
+    // Initialize T and Td tables
     initTables();
+
+    // print_Ttable(T0, "T0");
+    // print_Ttable(T1, "T1");
+    // print_Ttable(T2, "T2");
+    // print_Ttable(T3, "T3");
+    // print_Ttable(Td0, "Td0");
+    // print_Ttable(Td1, "Td1");
+    // print_Ttable(Td2, "Td2");
+    // print_Ttable(Td3, "Td3");
+
+    // Compute decryption keys from encryption keys. This step requires the T-tables to be initialized first
+    decryption_keys_ = decryption_keys(round_keys_);
+
+    // printAllKeys(round_keys_, NUM_ROUNDS, "encryption keys");
+    // printAllKeys(decryption_keys_, NUM_ROUNDS, "decryption keys");
 }
 
-// Main functions
 std::vector<Byte> AesTTable::encrypt_message(const vector<Byte> &message)
 {
+    // Pad the message to be a multiple of BLOCK_SIZE
     vector<Byte> padded_message = pad_message(message);
 
+    // Will contain the final ciphertext made of encrypted blocks
     vector<Byte> ciphertext;
 
+    // For each 16-byte block, encrypt it and append it to the ciphertext
+    // We repeat until the size of the padded message
     for (size_t i = 0; i < padded_message.size(); i += BLOCK_SIZE)
     {
         Block block{};
+
+        // We use std::copy to copy the block from the message to the Block array
         copy(padded_message.begin() + i, padded_message.begin() + i + BLOCK_SIZE, block.begin());
+
+        // Encrypt the block
         array<Byte, BLOCK_SIZE> encrypted_block = encrypt_block(block);
+
+        // Adding the encrypted block to the ciphertext
         ciphertext.insert(ciphertext.end(), encrypted_block.begin(), encrypted_block.end());
     }
 
     return ciphertext;
 }
 
+// The process is similar to encryption, but we use the decryption functions
+//  and apply them in reverse order
 std::vector<Byte> AesTTable::decrypt_message(const vector<Byte> &ciphertext)
 {
     vector<Byte> decrypted_message;
@@ -130,20 +146,25 @@ std::vector<Byte> AesTTable::decrypt_message(const vector<Byte> &ciphertext)
 
 void AesTTable::initTables()
 {
-    for (int i = 0; i < 256; ++i)
+    // Precompute T and Td tables
+    // As many iterations as there are possible byte values (0-255)
+    for (int i = 0; i < T_TABLE_SIZE; ++i)
     {
+        // SubByte value from S-Box
         uint8_t s = S_BOX[i];
+
+        // Multiply by 2 and 3 in GF(2^8)
         uint8_t s2 = gfmul(s, 0x02);
         uint8_t s3 = gfmul(s, 0x03);
 
         T0[i] = (static_cast<uint32_t>(s2) << 24) |
-                (static_cast<uint32_t>(s)  << 16) |
-                (static_cast<uint32_t>(s)  <<  8) |
+                (static_cast<uint32_t>(s) << 16) |
+                (static_cast<uint32_t>(s) << 8) |
                 (static_cast<uint32_t>(s3));
 
-        T1[i] = ((T0[i] << 8)  | (T0[i] >> 24)) & 0xFFFFFFFF;
+        T1[i] = ((T0[i] << 24) | (T0[i] >> 8)) & 0xFFFFFFFF;
         T2[i] = ((T0[i] << 16) | (T0[i] >> 16)) & 0xFFFFFFFF;
-        T3[i] = ((T0[i] << 24) | (T0[i] >> 8))  & 0xFFFFFFFF;
+        T3[i] = ((T0[i] << 8) | (T0[i] >> 24)) & 0xFFFFFFFF;
 
         uint8_t si = INV_S_BOX[i];
         uint8_t s9 = gfmul(si, 0x09);
@@ -153,24 +174,14 @@ void AesTTable::initTables()
 
         Td0[i] = (static_cast<uint32_t>(se) << 24) |
                  (static_cast<uint32_t>(s9) << 16) |
-                 (static_cast<uint32_t>(sd) << 8)  |
+                 (static_cast<uint32_t>(sd) << 8) |
                  (static_cast<uint32_t>(sb));
 
-        Td1[i] = ((Td0[i] << 8)  | (Td0[i] >> 24)) & 0xFFFFFFFF;
+        Td1[i] = ((Td0[i] << 24) | (Td0[i] >> 8)) & 0xFFFFFFFF;
         Td2[i] = ((Td0[i] << 16) | (Td0[i] >> 16)) & 0xFFFFFFFF;
-        Td3[i] = ((Td0[i] << 24) | (Td0[i] >> 8))  & 0xFFFFFFFF;
+        Td3[i] = ((Td0[i] << 8) | (Td0[i] >> 24)) & 0xFFFFFFFF;
     }
-
-    print_Ttable(T0, "T0");
-    print_Ttable(T1, "T1");
-    print_Ttable(T2, "T2");
-    print_Ttable(T3, "T3");
-    print_Ttable(Td0, "Td0");
-    print_Ttable(Td1, "Td1");
-    print_Ttable(Td2, "Td2");
-    print_Ttable(Td3, "Td3");
 }
-
 
 RoundKeys AesTTable::key_expansion(const Key &key)
 {
@@ -270,6 +281,7 @@ Block AesTTable::encrypt_block(const Block &block)
 {
     Bit32Word state = block_to_words(block);
 
+    // Initial AddRoundKey
     for (int i = 0; i < 4; ++i)
     {
         state[i] ^= round_keys_[i];
@@ -285,12 +297,14 @@ Block AesTTable::encrypt_block(const Block &block)
             uint8_t a2 = (state[(i + 2) % 4] >> 8) & 0xFF;
             uint8_t a3 = (state[(i + 3) % 4]) & 0xFF;
 
+            // Precomputed T-Table lookup and AddRoundKey
             tmp[i] = T0[a0] ^ T1[a1] ^ T2[a2] ^ T3[a3] ^ round_keys_[4 * round + i];
         }
         state = tmp;
     }
 
     Bit32Word tmp{};
+    // Last round (no MixColumns)
     for (int i = 0; i < 4; ++i)
     {
         uint8_t a0 = (state[i] >> 24) & 0xFF;
@@ -298,11 +312,13 @@ Block AesTTable::encrypt_block(const Block &block)
         uint8_t a2 = (state[(i + 2) % 4] >> 8) & 0xFF;
         uint8_t a3 = (state[(i + 3) % 4]) & 0xFF;
 
+        // subBytes and ShiftRows
         tmp[i] = (static_cast<uint32_t>(S_BOX[a0]) << 24) |
                  (static_cast<uint32_t>(S_BOX[a1]) << 16) |
                  (static_cast<uint32_t>(S_BOX[a2]) << 8) |
                  (static_cast<uint32_t>(S_BOX[a3]));
 
+        // AddRoundKey
         tmp[i] ^= round_keys_[4 * NUM_ROUNDS + i];
     }
     state = tmp;
@@ -310,18 +326,49 @@ Block AesTTable::encrypt_block(const Block &block)
     return words_to_block(state);
 }
 
-Block AesTTable::decrypt_block(const Block &block)
+RoundKeys AesTTable::decryption_keys(const RoundKeys &enc_keys)
 {
-    Bit32Word state = block_to_words(block);
+    RoundKeys dec_keys{};
 
+    // Copy first and last round keys
     for (int i = 0; i < 4; ++i)
     {
-        state[i] ^= round_keys_[4 * NUM_ROUNDS + i];
+        dec_keys[i] = enc_keys[i];
+        dec_keys[(NUM_ROUNDS) * 4 + i] = enc_keys[NUM_ROUNDS * 4 + i];
     }
 
-    for (int round = NUM_ROUNDS - 1; round > 0; --round)
+    // Apply InvMixColumns to all intermediate round keys
+    for (int i = 4; i < NUM_ROUNDS * 4; ++i)
     {
-        Bit32Word tmp{};
+        uint32_t w = enc_keys[i];
+        uint8_t b0 = (w >> 24);
+        uint8_t b1 = (w >> 16) & 0xFF;
+        uint8_t b2 = (w >> 8) & 0xFF;
+        uint8_t b3 = w & 0xFF;
+
+        dec_keys[i] = Td0[S_BOX[b0]] ^ Td1[S_BOX[b1]] ^ Td2[S_BOX[b2]] ^ Td3[S_BOX[b3]];
+    }
+
+    return dec_keys;
+}
+
+Block AesTTable::decrypt_block(const Block &block)
+{
+    // Convert 16-byte block to 4 uint32_t words
+    Bit32Word state = block_to_words(block);
+    Bit32Word tmp{};
+
+    int nr = NUM_ROUNDS;
+
+    // Initial AddRoundKey with last round key
+    for (int i = 0; i < 4; ++i)
+    {
+        state[i] ^= decryption_keys_[(nr) * 4 + i];
+    }
+
+    // Main rounds (InvShiftRows + InvSubBytes + InvMixColumns + AddRoundKey)
+    for (int round = nr - 1; round > 0; --round)
+    {
         for (int i = 0; i < 4; ++i)
         {
             uint8_t a0 = (state[i] >> 24) & 0xFF;
@@ -329,12 +376,12 @@ Block AesTTable::decrypt_block(const Block &block)
             uint8_t a2 = (state[(i + 2) % 4] >> 8) & 0xFF;
             uint8_t a3 = (state[(i + 1) % 4]) & 0xFF;
 
-            tmp[i] = Td0[a0] ^ Td1[a1] ^ Td2[a2] ^ Td3[a3] ^ round_keys_[4 * round + i];
+            tmp[i] = Td0[a0] ^ Td1[a1] ^ Td2[a2] ^ Td3[a3] ^ decryption_keys_[4 * round + i];
         }
         state = tmp;
     }
 
-    Bit32Word tmp{};
+    // Last round: InvSubBytes + InvShiftRows + AddRoundKey (no MixColumns)
     for (int i = 0; i < 4; ++i)
     {
         uint8_t a0 = (state[i] >> 24) & 0xFF;
@@ -347,9 +394,54 @@ Block AesTTable::decrypt_block(const Block &block)
                  (static_cast<uint32_t>(INV_S_BOX[a2]) << 8) |
                  (static_cast<uint32_t>(INV_S_BOX[a3]));
 
-        tmp[i] ^= round_keys_[i]; // initial key
+        tmp[i] ^= decryption_keys_[i]; // initial round key
     }
+
     state = tmp;
 
     return words_to_block(state);
+}
+
+void AesTTable::printAllKeys(const RoundKeys &keys, int numRounds, const std::string &name)
+{
+    std::cout << "=== " << name << " ===\n";
+    for (int round = 0; round <= numRounds; ++round)
+    {
+        std::cout << "Round " << round << " Key: ";
+        for (int i = 0; i < 4; ++i)
+        {
+            // Printing a single word in hex format at the time
+            uint32_t word = keys[round * 4 + i];
+
+            // setw is used to set the width of the output to 8 characters
+            // setfill is used to fill the empty spaces with '0'
+            std::cout << "0x"
+                      << std::hex << std::setw(8) << std::setfill('0')
+                      << word << " ";
+        }
+        std::cout << std::dec << "\n";
+    }
+    std::cout << "====================\n";
+}
+
+void AesTTable::print_Ttable(const std::array<uint32_t, T_TABLE_SIZE> &table, const std::string &name)
+{
+    std::cout << name << " = {\n";
+    for (int i = 0; i < T_TABLE_SIZE; ++i)
+    {
+        std::cout << "0x" << std::hex << std::setw(8) << std::setfill('0')
+                  << table[i];
+        if (i != 255)
+        {
+            std::cout << ", ";
+        }
+
+        if ((i + 1) % 8 == 0)
+        {
+            std::cout << "\n";
+        }
+    }
+
+    std::cout << "};\n"
+              << std::dec;
 }
