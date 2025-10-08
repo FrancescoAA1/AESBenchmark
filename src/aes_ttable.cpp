@@ -157,21 +157,27 @@ void AesTTable::initTables()
         uint8_t s2 = gfmul(s, 0x02);
         uint8_t s3 = gfmul(s, 0x03);
 
+        // Construct the T0 entry as a 32-bit word
+        // Each byte corresponds to a column in the MixColumns matrix multiplication
         T0[i] = (static_cast<uint32_t>(s2) << 24) |
                 (static_cast<uint32_t>(s) << 16) |
                 (static_cast<uint32_t>(s) << 8) |
                 (static_cast<uint32_t>(s3));
 
+        // Rotate T0 to get T1, T2, T3
         T1[i] = ((T0[i] << 24) | (T0[i] >> 8)) & 0xFFFFFFFF;
         T2[i] = ((T0[i] << 16) | (T0[i] >> 16)) & 0xFFFFFFFF;
         T3[i] = ((T0[i] << 8) | (T0[i] >> 24)) & 0xFFFFFFFF;
 
+        // Now for the inverse tables Td0, Td1, Td2, Td3 using INV_S_BOX and multiplications by 9, 11, 13, 14
         uint8_t si = INV_S_BOX[i];
         uint8_t s9 = gfmul(si, 0x09);
         uint8_t sb = gfmul(si, 0x0b);
         uint8_t sd = gfmul(si, 0x0d);
         uint8_t se = gfmul(si, 0x0e);
 
+        // Construct the Td0 entry as a 32-bit word
+        // Each byte corresponds to a column in the InvMixColumns matrix multiplication
         Td0[i] = (static_cast<uint32_t>(se) << 24) |
                  (static_cast<uint32_t>(s9) << 16) |
                  (static_cast<uint32_t>(sd) << 8) |
@@ -183,12 +189,14 @@ void AesTTable::initTables()
     }
 }
 
+// Key expansion for AES-128 expands a 16-byte key into 44 words (4 bytes each)
 RoundKeys AesTTable::key_expansion(const Key &key)
 {
     RoundKeys roundKeys{};
 
     for (int i = 0; i < 4; ++i)
     {
+        // Each word is constructed from 4 bytes of the original key
         roundKeys[i] = (static_cast<uint32_t>(key[4 * i + 0]) << 24) |
                        (static_cast<uint32_t>(key[4 * i + 1]) << 16) |
                        (static_cast<uint32_t>(key[4 * i + 2]) << 8) |
@@ -197,21 +205,26 @@ RoundKeys AesTTable::key_expansion(const Key &key)
 
     for (int i = 4; i < EXPANDED_KEY_WORDS; ++i)
     {
+        // Temp variable to hold the previous word
         uint32_t temp = roundKeys[i - 1];
 
         if (i % 4 == 0)
         {
 
+            // Rotate the bytes in the word (left shift by 8 bits)
             temp = (temp << 8) | (temp >> 24);
 
+            // Apply S-Box to each byte in the word
             temp = (static_cast<uint32_t>(S_BOX[(temp >> 24) & 0xFF]) << 24) |
                    (static_cast<uint32_t>(S_BOX[(temp >> 16) & 0xFF]) << 16) |
                    (static_cast<uint32_t>(S_BOX[(temp >> 8) & 0xFF]) << 8) |
                    (static_cast<uint32_t>(S_BOX[(temp) & 0xFF]) << 0);
 
+            // XOR with the round constant
             temp ^= (static_cast<uint32_t>(RCON[(i / 4) - 1][0]) << 24);
         }
 
+        // XOR with the word 4 positions earlier
         roundKeys[i] = roundKeys[i - 4] ^ temp;
     }
 
@@ -292,6 +305,7 @@ Block AesTTable::encrypt_block(const Block &block)
         Bit32Word tmp{};
         for (int i = 0; i < 4; ++i)
         {
+            // Extract bytes from the state words
             uint8_t a0 = (state[i] >> 24) & 0xFF;
             uint8_t a1 = (state[(i + 1) % 4] >> 16) & 0xFF;
             uint8_t a2 = (state[(i + 2) % 4] >> 8) & 0xFF;
@@ -371,11 +385,13 @@ Block AesTTable::decrypt_block(const Block &block)
     {
         for (int i = 0; i < 4; ++i)
         {
+            // Extract bytes from the state words
             uint8_t a0 = (state[i] >> 24) & 0xFF;
             uint8_t a1 = (state[(i + 3) % 4] >> 16) & 0xFF;
             uint8_t a2 = (state[(i + 2) % 4] >> 8) & 0xFF;
             uint8_t a3 = (state[(i + 1) % 4]) & 0xFF;
 
+            // Precomputed Td-Table lookup and AddRoundKey
             tmp[i] = Td0[a0] ^ Td1[a1] ^ Td2[a2] ^ Td3[a3] ^ decryption_keys_[4 * round + i];
         }
         state = tmp;
