@@ -11,6 +11,7 @@
 #include <aes_naive.h>
 #include <aes_ttable.h>
 #include <aes_aesni.h>
+#include <aes_fileio.h>
 
 #include "aes_constants.h"
 
@@ -117,6 +118,9 @@ int main()
     cout << "\n"; // Expected: 69c4e0d86a7b0430d8cdb78070b4c55a
     for (auto b : decrypted_ni) std::printf("%02x", b);
     std::puts(""); // Expected: 00112233445566778899aabbccddeeff
+
+    AesFileIo fileIo;
+    fileIo.encrypt_file("input.jpg", "output.jpg");
 
     return 0;
 }
