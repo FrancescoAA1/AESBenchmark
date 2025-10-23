@@ -17,7 +17,7 @@ using Key = std::array<Byte, BLOCK_SIZE>;
 using ExpandedKey = std::array<Word, EXPANDED_KEY_WORDS>;
 using Block = std::array<Byte, BLOCK_SIZE>;
 
-class AesNaive
+class AesNaive : public IAES
 {
 public:
     // Constructor
