@@ -8,6 +8,7 @@
 
 // Including constants for tables and sizes
 #include "aes_constants.h"
+#include "aes.h"
 
 // Aliases for clarity
 using Byte = std::uint8_t;
@@ -17,7 +18,7 @@ using Key = std::array<Byte, BLOCK_SIZE>;
 using ExpandedKey = std::array<Word, EXPANDED_KEY_WORDS>;
 using Block = std::array<Byte, BLOCK_SIZE>;
 
-class AesNaive
+class AesNaive : public IAES
 {
 public:
     // Constructor
