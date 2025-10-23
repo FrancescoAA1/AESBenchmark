@@ -8,6 +8,7 @@
 
 // Including constants for tables and sizes
 #include "aes_constants.h"
+#include "aes.h"
 
 // Type aliases
 using Byte = std::uint8_t;
