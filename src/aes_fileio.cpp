@@ -54,6 +54,8 @@ void AesFileIo::encrypt_file() {
     } while(!end_of_file);
     // Implementation for file encryption
     // Open input file, read contents, encrypt using AesNaive, write to output file
+    f.close();
+    out.close();
 }
 void AesFileIo::decrypt_file() {
 
@@ -102,5 +104,7 @@ void AesFileIo::decrypt_file() {
 
     } while(!end_of_file);
 
+    f.close();
+    out.close();
 }
 
