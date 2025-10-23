@@ -13,8 +13,8 @@ public:
 
     // Main functions used externally
     // We will be timing their execution time in main.cpp
-    void encrypt_file(const std::string &input_filename, const std::string &output_filename);
-    void decrypt_file(const std::string &input_filename, const std::string &output_filename);
+    void encrypt_file();
+    void decrypt_file();
 
     ~AesFileIo();
 

@@ -120,7 +120,18 @@ int main()
     std::puts(""); // Expected: 00112233445566778899aabbccddeeff
 
     AesFileIo fileIo;
-    fileIo.encrypt_file("input.jpg", "output.jpg");
+    start = std::chrono::high_resolution_clock::now();
+    fileIo.encrypt_file();
+    end = std::chrono::high_resolution_clock::now();
+     cout << "File Encryption 6415 blocks with AES-Naive took: "
+           << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()
+           << " microseconds.\n";
+     start = std::chrono::high_resolution_clock::now();
+     fileIo.decrypt_file();
+     end = std::chrono::high_resolution_clock::now();
+      cout << "File Decryption 6416 blocks with AES-NI took: "
+            << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()
+            << " microseconds.\n";
 
     return 0;
 }

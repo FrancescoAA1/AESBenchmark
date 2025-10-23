@@ -29,6 +29,10 @@ public:
     std::vector<Byte> encrypt_message(const std::vector<Byte> &message);
     std::vector<Byte> decrypt_message(const std::vector<Byte> &ciphertext);
 
+    // Block encryption/decryption used by encrypt_message and decrypt_message for each 16-byte block
+    Block encrypt_block(const Block &block);
+    Block decrypt_block(const Block &block);
+
 private:
     // Constants
     static const std::array<Byte, S_BOX_SIZE> S_BOX;
@@ -79,9 +83,6 @@ private:
     static Byte GF_mul(Byte a, Byte b);
     static Byte Xtime(Byte a);
 
-    // Block encryption/decryption used by encrypt_message and decrypt_message for each 16-byte block
-    Block encrypt_block(const Block &block);
-    Block decrypt_block(const Block &block);
 };
 
 #endif
