@@ -19,7 +19,7 @@ using Key = std::array<Byte, BLOCK_SIZE>;
 using RoundKeys = std::array<uint32_t, EXPANDED_KEY_WORDS>;
 using Block = std::array<Byte, BLOCK_SIZE>; // Need to internally convert each block to 4 uint32_t words
 
-class AesTTable
+class AesTTable : public IAES
 {
 public:
     explicit AesTTable(const Key &key);

@@ -43,4 +43,6 @@ class IAES
         }
         return res;
     }
-}
+};
+
+#endif

@@ -1,4 +1,6 @@
 1) generalize the class AES / AESNi / AESTTABLE so that they have a wrapper (unpad / pad / message handling are duplicate code)
+//Remove pad message (takes in a std::array of byte and returns a block) and unpad (takes in a block and return std::array)
+
 
 2) make sure aes_ni can encode and decode multiple blocks
 
