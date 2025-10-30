@@ -24,11 +24,6 @@ public:
     // Constructor
     explicit AesNaive(const Key &key);
 
-    // Main functions used externally
-    // We will be timing their execution time in main.cpp
-    std::vector<Byte> encrypt_message(const std::vector<Byte> &message);
-    std::vector<Byte> decrypt_message(const std::vector<Byte> &ciphertext);
-
     // Block encryption/decryption used by encrypt_message and decrypt_message for each 16-byte block
     Block encrypt_block(const Block &block);
     Block decrypt_block(const Block &block);
@@ -71,12 +66,6 @@ private:
     // Used to convert between Block and State representations
     State bytes_to_state(const Block &block);
     std::array<Byte, BLOCK_SIZE> state_to_bytes(const State &state);
-
-    // Adding as many padding bytes as needed to make the message a multiple of BLOCK_SIZE
-    std::vector<Byte> pad_message(const std::vector<Byte> &message);
-
-    // Removing the padding bytes after decryption
-    std::vector<Byte> unpad_message(const std::vector<Byte> &message);
 
     // Used to perform multiplication in GF(2^8) in MixColumns and InvMixColumns
     // Can be implemented as an inline function //REFACTOR

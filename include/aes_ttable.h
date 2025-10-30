@@ -25,10 +25,9 @@ class AesTTable : public IAES
 public:
     explicit AesTTable(const Key &key);
 
-    // Main functions
-    // We will be timing their execution time in main.cpp
-    std::vector<Byte> encrypt_message(const std::vector<Byte> &message);
-    std::vector<Byte> decrypt_message(const std::vector<Byte> &ciphertext);
+    // Block encryption/decryption used by encrypt_message and decrypt_message for each 16-byte block
+    Block encrypt_block(const Block &block);
+    Block decrypt_block(const Block &block);
 
 private:
     Key key_;
@@ -57,12 +56,6 @@ private:
 
     // Helpers
 
-    // Adding as many padding bytes as needed to make the message a multiple of BLOCK_SIZE
-    std::vector<Byte> pad_message(const std::vector<Byte> &message);
-
-    // Removing the padding bytes after decryption
-    std::vector<Byte> unpad_message(const std::vector<Byte> &message);
-
     static inline Byte xtime(Byte a)
     {
         return static_cast<Byte>((a << 1) ^ ((a & 0x80u) ? 0x1Bu : 0x00u));
@@ -86,10 +79,6 @@ private:
     // since we work with 4 uint32_t words internally
     static Bit32Word block_to_words(const Block &block);
     static Block words_to_block(const Bit32Word &words);
-
-    // Block encryption/decryption used by encrypt_message and decrypt_message for each 16-byte block
-    Block encrypt_block(const Block &block);
-    Block decrypt_block(const Block &block);
 
     // Printers
 

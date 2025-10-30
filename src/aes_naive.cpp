@@ -84,50 +84,6 @@ AesNaive::AesNaive(const Key &key) : key_(key)
     round_keys_ = key_expansion(key_);
 }
 
-std::vector<Byte> AesNaive::encrypt_message(const vector<Byte> &message)
-{
-    // Pad the message to be a multiple of BLOCK_SIZE
-    vector<Byte> padded_message = pad_message(message);
-
-    // Will contain the final ciphertext made of encrypted blocks
-    vector<Byte> ciphertext;
-
-    // For each 16-byte block, encrypt it and append it to the ciphertext
-    // We repeat until the size of the padded message
-    for (size_t i = 0; i < padded_message.size(); i += BLOCK_SIZE)
-    {
-        Block block{};
-
-        // We use std::copy to copy the block from the message to the Block array
-        copy(padded_message.begin() + i, padded_message.begin() + i + BLOCK_SIZE, block.begin());
-
-        // Encrypt the block
-        array<Byte, BLOCK_SIZE> encrypted_block = encrypt_block(block);
-
-        // Adding the encrypted block to the ciphertext
-        ciphertext.insert(ciphertext.end(), encrypted_block.begin(), encrypted_block.end());
-    }
-
-    return ciphertext;
-}
-
-// The process is similar to encryption, but we use the decryption functions
-//  and apply them in reverse order
-std::vector<Byte> AesNaive::decrypt_message(const vector<Byte> &ciphertext)
-{
-    vector<Byte> decrypted_message;
-
-    for (size_t i = 0; i < ciphertext.size(); i += BLOCK_SIZE)
-    {
-        Block block{};
-        copy(ciphertext.begin() + i, ciphertext.begin() + i + BLOCK_SIZE, block.begin());
-        array<Byte, BLOCK_SIZE> decrypted_block = decrypt_block(block);
-        decrypted_message.insert(decrypted_message.end(), decrypted_block.begin(), decrypted_block.end());
-    }
-
-    return unpad_message(decrypted_message);
-}
-
 // First operation of the encryption process (in the looping rounds)
 //  For each byte of the state matrix, substitute it with the corresponding byte in the S-Box
 void AesNaive::sub_bytes(State &state)
@@ -380,37 +336,6 @@ std::array<Byte, BLOCK_SIZE> AesNaive::state_to_bytes(const State &state)
     return block;
 }
 
-std::vector<Byte> AesNaive::pad_message(const std::vector<Byte> &message)
-{
-    // Calculate the number of padding bytes needed
-    int remainder = message.size() % BLOCK_SIZE;
-
-    // If the message is already a multiple of BLOCK_SIZE, we need to add a full block of padding
-    int padding_length = remainder != 0 ? BLOCK_SIZE - remainder : BLOCK_SIZE;
-
-    // We make padded because the parameter is const reference, and we need a modifiable local copy.
-    std::vector<Byte> padded = message;
-
-    // adding the padding bytes
-    padded.insert(padded.end(), padding_length, static_cast<Byte>(padding_length));
-
-    return padded;
-}
-
-std::vector<Byte> AesNaive::unpad_message(const std::vector<Byte> &message)
-{
-    // Check if the message size is valid
-    if (message.empty() || message.size() % BLOCK_SIZE != 0)
-    {
-        throw std::runtime_error("Invalid padded message size");
-    }
-
-    // Get the last byte to determine padding length
-    Byte padding_length = message.back();
-
-    // Remove padding bytes and return
-    return std::vector<Byte>(message.begin(), message.end() - padding_length);
-}
 
 /*We rotate 1 bit to the left then look at first bit
 if it is 1 we need to xor with 0x1B (which is the modolus x^8 + x^4 + x^3 + x + 1)

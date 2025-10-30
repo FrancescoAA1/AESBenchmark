@@ -17,18 +17,12 @@ class IAES
 {
     public:
 
-     virtual ~IAES() = default;
-
-    std::vector<Byte> encrypt_message(const std::vector<Byte>& message);
-    std::vector<Byte> decrypt_message(const std::vector<Byte>& ciphertext);
-
-    protected:
+    virtual ~IAES() = default;
 
     virtual Block encrypt_block(const Block& block) = 0;
     virtual Block decrypt_block(const Block& block) = 0;
 
-    std::vector<Byte> pad_message(const std::vector<Byte>& message);
-    std::vector<Byte> unpad_message(const std::vector<Byte>& message);
+    protected:
 
     static inline Byte xtime(Byte a) {
         return static_cast<Byte>((a << 1) ^ ((a & 0x80u) ? 0x1Bu : 0x00u));
