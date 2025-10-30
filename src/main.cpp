@@ -15,6 +15,7 @@
 #include <aes_benchmark.h>
 
 #include "aes_constants.h"
+#include <bench_aes.h>
 
 using namespace std;
 
@@ -72,6 +73,8 @@ int main()
           cout << "\n=== AES-NI Benchmark ===\n";
           cout << stats_ni.to_string("AES-NI,");
      }
+
+     run_aes_bench();
 
      return 0;
 }

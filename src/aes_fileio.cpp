@@ -19,7 +19,7 @@
 
  void AesFileIo::encrypt_file() {
 
-    AES128U32::Block key = {
+    /*AES128U32::Block key = {
         0x04931F7A,
         0x169BE2C5,
         0xF15E3CA8,
@@ -31,6 +31,7 @@
     AES128U32::Block ct;
 
     aes.encrypt_block(pt, ct);
+    */
 }
 
 /*
