@@ -3,6 +3,7 @@
 #include <chrono>
 #include <vector>
 #include <iostream>
+#include <string>
 
 #include "aes_constants.h"
 #include "aes_aesni.h"
@@ -10,9 +11,44 @@
 #include "aes_ttable.h"
 #include "aes_naive.h"
 
+struct Stats
+{
+    double min_time_ns;
+    double max_time_ns;
+    double avg_time_ns;
+
+    double median_time_ns;
+    double stddev_time_ns;
+
+    double avg_throughput_mb_s;
+    double latency_ns;
+    double avg_cycles_per_byte;
+
+    std::string to_string(const std::string& aes_name) const
+    {
+        return aes_name + 
+        std::to_string(min_time_ns) + "," +
+        std::to_string(max_time_ns) + "," +
+        std::to_string(avg_time_ns) + "," +
+        std::to_string(median_time_ns) + "," +
+        std::to_string(stddev_time_ns) + "," +
+        std::to_string(avg_throughput_mb_s) + "," +
+        std::to_string(latency_ns) + "," +
+        std::to_string(avg_cycles_per_byte) + "\n";
+    }
+};
+
 class AESBenchmark
 {
     public:
 
+    AESBenchmark(IAES& iaes);
+
+    //Runs the benchmark on the provided block for a given number of iterations and warmup iterations
+    //thanks to the interface the function works for both AesNaive and AesTTable and Aes-NI implementations
+    Stats benchmark_algorithm(const Block& block, size_t iterations, size_t warmup_iterations);
+
     private:
-}
+
+    IAES& aes_;
+};
