@@ -6,6 +6,7 @@
 #include <fstream>
 #include <array>
 #include "../include/aes_aesni.h"
+#include "../include/aes_aesni_int.h"
 
 using namespace std;
 
@@ -14,6 +15,23 @@ AesFileIo::~AesFileIo() {}
 
 using Byte = std::uint8_t;
 
+void AesFileIo::encrypt_file() {
+
+    AES128U32::Block key = {
+        0x04931F7A,
+        0x169BE2C5,
+        0xF15E3CA8,
+        0x9E11447D
+    };
+    AES128U32 aes(key);
+
+    AES128U32::Block pt{ 0x6bc1bee2u, 0x2e409f96u, 0xe93d7e11u, 0x7393172au };
+    AES128U32::Block ct;
+
+    aes.encrypt_block(pt, ct);
+}
+
+/*
 void AesFileIo::encrypt_file() {
 
     Key key = {
@@ -57,6 +75,7 @@ void AesFileIo::encrypt_file() {
     f.close();
     out.close();
 }
+*/
 void AesFileIo::decrypt_file() {
 
     uint8_t key_ni[16] = {
