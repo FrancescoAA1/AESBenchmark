@@ -52,8 +52,8 @@ private:
     RoundKeys key_expansion(const Key &key);
 
     // Derive decryption keys from encryption keys
-    RoundKeys AesTTable::decryption_keys(const RoundKeys &enc_keys);
-
+    // REPLACE this line "RoundKeys AesTTable::decryption_keys(const RoundKeys &enc_keys);"
+       RoundKeys decryption_keys(const RoundKeys &enc_keys); /// update
     // Helpers
 
     static inline Byte xtime(Byte a)
@@ -86,5 +86,6 @@ private:
     void print_Ttable(const std::array<uint32_t, 256> &table, const std::string &name);
 
     // Print all round keys for debugging purposes
-    void AesTTable::printAllKeys(const RoundKeys &keys, int numRounds, const std::string &name);
+   // Replace this line "void AesTTable::printAllKeys(const RoundKeys &keys, int numRounds, const std::string &name);"
+    void printAllKeys(const RoundKeys &keys, int numRounds, const std::string &name); 
 };

@@ -4,7 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
-
+#include <algorithm>
 #include "aes_constants.h"
 #include "aes_aesni.h"
 #include "aes.h"

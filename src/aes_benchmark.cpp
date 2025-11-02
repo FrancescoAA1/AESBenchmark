@@ -1,6 +1,10 @@
 #include "aes_benchmark.h"
 #include <algorithm>
 #include <numeric>
+#include <iostream>
+#include <vector>
+#include <chrono>
+#include <cmath>
 
 AESBenchmark::AESBenchmark(IAES& iaes) : aes_(iaes) {}
 
