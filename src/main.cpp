@@ -74,7 +74,7 @@ int main()
           cout << stats_ni.to_string("AES-NI,");
      }
 
-     run_aes_bench();
+     //run_aes_bench();
 
      return 0;
 }
