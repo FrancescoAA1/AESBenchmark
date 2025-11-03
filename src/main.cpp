@@ -21,26 +21,43 @@ using namespace std;
 
 using Byte = std::uint8_t;
 
+
+void print_block(const Block &block)
+{   
+    for (auto b : block)
+        std::printf("%02X ", b);
+    
+    std::cout << std::endl;
+}
+
+
 int main()
 {
-
      Key key = {
-         0x7A, 0x1F, 0x93, 0x04,
-         0xC5, 0xE2, 0x9B, 0x16,
-         0xA8, 0x3C, 0x5E, 0xF1,
-         0x7D, 0x44, 0x11, 0x9E};
+         0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00};
 
      Block block = {
-         'H', 'a', 's', 't',
-         'a', ' ', 'l', 'a',
-         ' ', 'v', 'i', 's',
-         't', 'a', '!', '!'};
+         0, 0, 0, 0,
+         0, 0, 0, 0,
+         0, 0, 0, 0,
+         0, 0, 0, 0};
 
-     const size_t iterations = 100000;
-     const size_t warmup_iterations = 10000;
+     const size_t iterations = 10000;
+     const size_t warmup_iterations = 1000;
 
      // ---------- AES-Naive ----------
      AesNaive aes_naive(key);
+
+     //Following the test proposed in the book "The Design of Rijndael"
+     Block ciphertext = aes_naive.encrypt_block(block);
+     //print_block(ciphertext);
+
+     ciphertext = aes_naive.encrypt_block(ciphertext);
+     //print_block(ciphertext);
+
      AESBenchmark benchmark_naive(aes_naive);
      auto stats_naive_enc = benchmark_naive.benchmark_encrypt(block, iterations, warmup_iterations);
      auto stats_naive_dec = benchmark_naive.benchmark_decrypt(block, iterations, warmup_iterations);
@@ -62,7 +79,7 @@ int main()
      cout << stats_naive_enc.to_string("AES-Naive Full Encryption,");
 
      cout << "=== AES-Naive Decryption Benchmark ===\n";
-     cout << stats_naive_enc.to_string("AES-Naive Full Encryption,");
+     cout << stats_naive_enc.to_string("AES-Naive Full Decryption,");
 
      cout << "\nSubBytes Step Benchmark:\n";
      cout << stats_naive_subbytes.to_string("AES-Naive SubBytes,");
@@ -85,15 +102,20 @@ int main()
 
      // ---------- AES-TTable ----------
      AesTTable aes_ttable(key);
+
+     //Following the test proposed in the book "The Design of Rijndael"
+     ciphertext = aes_ttable.encrypt_block(block);
+     //print_block(ciphertext);
+
+     ciphertext = aes_ttable.encrypt_block(ciphertext);
+     //print_block(ciphertext);
+
      AESBenchmark benchmark_ttable(aes_ttable);
      auto stats_ttable_enc = benchmark_ttable.benchmark_encrypt(block, iterations, warmup_iterations);
      auto stats_ttable_dec = benchmark_ttable.benchmark_decrypt(block, iterations, warmup_iterations);
 
      auto stats_ttable_initTables = benchmark_ttable.benchmark_step(AESOperation::InitTables, block, iterations, warmup_iterations);
      auto stats_ttable_keyExp = benchmark_ttable.benchmark_step(AESOperation::KeyExpansionTTable, block, iterations, warmup_iterations);
-
-     cout << "\nSubBytes Step Benchmark:\n";
-     //cout << stats_ttable_subbytes.to_string("AES-TTable SubBytes,");
 
      cout << "\n=== AES-TTable Full Benchmark ===\n";
      cout << stats_ttable_enc.to_string("AES-TTable Full Encryption,");
@@ -115,6 +137,14 @@ int main()
      else
      {
           AesAESNI aes_ni(key);
+
+          //Following the test proposed in the book "The Design of Rijndael"
+          ciphertext = aes_ttable.encrypt_block(block);
+          //print_block(ciphertext);
+
+          ciphertext = aes_ttable.encrypt_block(ciphertext);
+          //print_block(ciphertext);
+
           AESBenchmark benchmark_ni(aes_ni);
           auto stats_ni_enc = benchmark_ni.benchmark_encrypt(block, iterations, warmup_iterations);
           auto stats_ni_dec = benchmark_ni.benchmark_decrypt(block, iterations, warmup_iterations);

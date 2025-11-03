@@ -97,8 +97,7 @@ public:
     AESBenchmark(IAES &iaes);
 
     // Benchmark a specific step method of AesNaive
-    Stats benchmark_step(AESOperation step, const Block& block, 
-                                   size_t iterations, size_t warmup_iterations);
+    Stats benchmark_step(AESOperation step, const Block& block, size_t iterations, size_t warmup_iterations);
 
     Stats benchmark_encrypt(const Block& block, size_t iterations, size_t warmup_iterations);
     Stats benchmark_decrypt(const Block& block, size_t iterations, size_t warmup_iterations);
