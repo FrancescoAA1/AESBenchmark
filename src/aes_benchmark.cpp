@@ -12,26 +12,35 @@ using namespace std;
 
 AESBenchmark::AESBenchmark(IAES& iaes) : aes_(iaes) {}
 
-Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, size_t warmup_iterations)
+Stats AESBenchmark::benchmark_algorithm(const Block& block,
+                                        size_t iterations,
+                                        size_t warmup_iterations,
+                                        bool encrypt)
 {
-    //why not an array? because we need to reserve a non-fixed size of elements at runtime
     std::vector<double> timings;
     timings.reserve(iterations);
 
-    // Warmup phase
-    for (size_t i = 0; i < warmup_iterations; ++i)
-    {
-        aes_.encrypt_block(block);
-    }
+    // Select operation (MSVC-safe)
+    std::function<void(const Block&)> operation;
+    if (encrypt)
+        operation = [&](const Block& b) { aes_.encrypt_block(b); };
+    else
+        operation = [&](const Block& b) { aes_.decrypt_block(b); };
 
-    // Benchmarking phase
+    // --- Warmup phase ---
+    for (size_t i = 0; i < warmup_iterations; ++i)
+        operation(block);
+
+    // --- Benchmarking phase ---
     for (size_t i = 0; i < iterations; ++i)
     {
         auto start = std::chrono::high_resolution_clock::now();
-        aes_.encrypt_block(block);
+        operation(block);
         auto end = std::chrono::high_resolution_clock::now();
 
-        double duration_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        double duration_ns =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+
         timings.push_back(duration_ns);
     }
 
@@ -93,57 +102,86 @@ Stats AESBenchmark::benchmark_step(AESOperation step, const Block& block,
 
     // Define the operation function (captures AES instance)
     std::function<void(State&)> op_func;
+State st{};  // Initialize state outside the loop
 
-    if (aes_naive) {
-        op_func = [&](State& st) {
-            switch(step) {
-                case AESOperation::SubBytes:       aes_naive->sub_bytes(st); break;
-                case AESOperation::ShiftRows:      aes_naive->shift_rows(st); break;
-                case AESOperation::MixColumns:     aes_naive->mix_columns(st); break;
-                case AESOperation::AddRoundKey:    aes_naive->add_round_key(st, aes_naive->get_round_key(0)); break;
+if (aes_naive) {
+    st = aes_naive->bytes_to_state(block); // Initialize once
+
+    op_func = [&](State& s) {
+        switch(step) {
+            case AESOperation::SubBytes:       aes_naive->sub_bytes(s); break;
+            case AESOperation::ShiftRows:      aes_naive->shift_rows(s); break;
+            case AESOperation::MixColumns:     aes_naive->mix_columns(s); break;
+            case AESOperation::AddRoundKey:    aes_naive->add_round_key(s, aes_naive->get_round_key(0)); break;
                 case AESOperation::MixColumnsFast: aes_naive->mix_columns_fast(st); break;
                 case AESOperation::InvSubBytes:    aes_naive->inv_sub_bytes(st); break;
                 case AESOperation::InvShiftRows:   aes_naive->inv_shift_rows(st); break;
                 case AESOperation::InvMixColumns:  aes_naive->inv_mix_columns(st); break;
-                case AESOperation::KeyExpansion:   aes_naive->key_expansion(aes_naive->key_); break;
-                case AESOperation::GFMul:          aes_naive->GF_mul(0x57, 0x83); break;
+                case AESOperation::KeyExpansionNaive:   aes_naive->key_expansion(aes_naive->key_); break;
+                //case AESOperation::GFMul:          aes_naive->GF_mul(0x57, 0x83); break;
+
                 case AESOperation::EncryptBlock:  aes_naive->encrypt_block(block); break;
-            }
-        };
-    } 
-    else {
-        // For TTable and NI, provide empty lambda
-        op_func = [](State&) {};
-    }
+                case AESOperation::DecryptBlock: aes_naive->decrypt_block(block);
+            default: break;
+        }
+    };
+} 
+else if (aes_ttable) {
+    op_func = [&](State&) {
+        switch (step) {
+            case AESOperation::InitTables:      aes_ttable->initTables(); break;
+            case AESOperation::KeyExpansionTTable:    aes_ttable->key_expansion(aes_ttable->key_); break;
+
+            case AESOperation::EncryptBlock:    aes_ttable->encrypt_block(block); break;
+            case AESOperation::DecryptBlock:    aes_ttable->decrypt_block(block); break;
+
+            default: break;
+        }
+    };
+}
+else if (aes_ni) {
+    op_func = [&](State&) {
+        switch (step) {
+            case AESOperation::KeyExpansionNI:    aes_ni->expand_key(aes_ni->key_, aes_ni->enc_keys_); break;
+            case AESOperation::KeyDecryptNI: aes_ni->expand_key_decrypt(aes_ni->dec_keys_, aes_ni->enc_keys_); break;
+
+            case AESOperation::EncryptBlock:    aes_ni->encrypt_block(block); break;
+            case AESOperation::DecryptBlock:    aes_ni->decrypt_block(block); break;
+
+            default: break;
+        }
+    };
+}
+else {
+    op_func = [](State&) {};
+}
 
 // WARMUP PHASE
-    for (size_t i = 0; i < warmup_iterations; ++i) {
-        if (aes_naive) {
-            State st = aes_naive->bytes_to_state(block);
-            op_func(st);
-        }
-        else {
-            cout << "Benchmarking step not implemented for this AES implementation.\n";
-        }
-    }
+for (size_t i = 0; i < warmup_iterations; ++i) {
+    op_func(st);
+}
 
-    // BENCHMARKING PHASE
-    for (size_t i = 0; i < iterations; ++i) {
-        State st; 
-        if (aes_naive) 
-        {
-            st = aes_naive->bytes_to_state(block);
+// BENCHMARKING PHASE
+for (size_t i = 0; i < iterations; ++i) {
+    auto start = std::chrono::high_resolution_clock::now();
+    op_func(st);
+    auto end = std::chrono::high_resolution_clock::now();
 
-        auto start = std::chrono::high_resolution_clock::now();
-        op_func(st);
-        auto end = std::chrono::high_resolution_clock::now();
-
-        timings.push_back(std::chrono::duration<double, std::nano>(end - start).count());
-        }
-        else {
-            cout << "Benchmarking step not implemented for this AES implementation.\n";
-        }
-    }
-
+    timings.push_back(std::chrono::duration<double, std::nano>(end - start).count());
+}
     return compute_stats(timings);
+}
+
+Stats AESBenchmark::benchmark_encrypt(const Block& block,
+                                      size_t iterations,
+                                      size_t warmup_iterations)
+{
+    return benchmark_algorithm(block, iterations, warmup_iterations, true);
+}
+
+Stats AESBenchmark::benchmark_decrypt(const Block& block,
+                                      size_t iterations,
+                                      size_t warmup_iterations)
+{
+    return benchmark_algorithm(block, iterations, warmup_iterations, false);
 }

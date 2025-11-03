@@ -24,10 +24,6 @@ using Byte = std::uint8_t;
 int main()
 {
 
-     //---------------- Test AES-128 Naive (aes.h) ---------------
-
-     cout << "\n=== AES-128 Naive Test ===\n \n";
-
      Key key = {
          0x7A, 0x1F, 0x93, 0x04,
          0xC5, 0xE2, 0x9B, 0x16,
@@ -40,13 +36,14 @@ int main()
          ' ', 'v', 'i', 's',
          't', 'a', '!', '!'};
 
-     const size_t iterations = 1000;
-     const size_t warmup_iterations = 1000;
+     const size_t iterations = 100000;
+     const size_t warmup_iterations = 10000;
 
      // ---------- AES-Naive ----------
      AesNaive aes_naive(key);
      AESBenchmark benchmark_naive(aes_naive);
-     auto stats_naive = benchmark_naive.benchmark_algorithm(block, iterations, warmup_iterations);
+     auto stats_naive_enc = benchmark_naive.benchmark_encrypt(block, iterations, warmup_iterations);
+     auto stats_naive_dec = benchmark_naive.benchmark_decrypt(block, iterations, warmup_iterations);
 
      auto stats_naive_subbytes = benchmark_naive.benchmark_step(AESOperation::SubBytes, block, iterations, warmup_iterations);
      auto stats_naive_shiftrows = benchmark_naive.benchmark_step(AESOperation::ShiftRows, block, iterations, warmup_iterations);
@@ -56,13 +53,16 @@ int main()
      auto stats_naive_invsubbytes = benchmark_naive.benchmark_step(AESOperation::InvSubBytes, block, iterations, warmup_iterations);
      auto stats_naive_invshiftrows = benchmark_naive.benchmark_step(AESOperation::InvShiftRows, block, iterations, warmup_iterations);
      auto stats_naive_invmixcolumns = benchmark_naive.benchmark_step(AESOperation::InvMixColumns, block, iterations, warmup_iterations);
-     auto stats_naive_keyexpansion = benchmark_naive.benchmark_step(AESOperation::KeyExpansion, block, iterations, warmup_iterations);
+     auto stats_naive_keyexpansion = benchmark_naive.benchmark_step(AESOperation::KeyExpansionNaive, block, iterations, warmup_iterations);
      
      //to be checked --> gives error
      //auto stats_naive_gfmul = benchmark_naive.benchmark_step(AESOperation::GFMul, block, iterations, warmup_iterations);
 
-     cout << "=== AES-Naive Benchmark ===\n";
-     cout << stats_naive.to_string("AES-Naive,");
+     cout << "=== AES-Naive Encrpytion Benchmark ===\n";
+     cout << stats_naive_enc.to_string("AES-Naive Full Encryption,");
+
+     cout << "=== AES-Naive Decryption Benchmark ===\n";
+     cout << stats_naive_enc.to_string("AES-Naive Full Encryption,");
 
      cout << "\nSubBytes Step Benchmark:\n";
      cout << stats_naive_subbytes.to_string("AES-Naive SubBytes,");
@@ -86,15 +86,26 @@ int main()
      // ---------- AES-TTable ----------
      AesTTable aes_ttable(key);
      AESBenchmark benchmark_ttable(aes_ttable);
-     auto stats_ttable = benchmark_ttable.benchmark_algorithm(block, iterations, warmup_iterations);
+     auto stats_ttable_enc = benchmark_ttable.benchmark_encrypt(block, iterations, warmup_iterations);
+     auto stats_ttable_dec = benchmark_ttable.benchmark_decrypt(block, iterations, warmup_iterations);
 
-     
+     auto stats_ttable_initTables = benchmark_ttable.benchmark_step(AESOperation::InitTables, block, iterations, warmup_iterations);
+     auto stats_ttable_keyExp = benchmark_ttable.benchmark_step(AESOperation::KeyExpansionTTable, block, iterations, warmup_iterations);
 
      cout << "\nSubBytes Step Benchmark:\n";
      //cout << stats_ttable_subbytes.to_string("AES-TTable SubBytes,");
 
-     cout << "\n=== AES-TTable Benchmark ===\n";
-     cout << stats_ttable.to_string("AES-TTable,");
+     cout << "\n=== AES-TTable Full Benchmark ===\n";
+     cout << stats_ttable_enc.to_string("AES-TTable Full Encryption,");
+
+     cout << "\n=== AES-TTable Full Benchmark ===\n";
+     cout << stats_ttable_dec.to_string("AES-TTable Full Decryption,");
+
+     cout << "\nInitTables Step Benchmark:\n";
+     cout << stats_ttable_initTables.to_string("AES-TTable InitTables,");
+
+     cout << "\nKeyExpansion Step Benchmark:\n";
+     cout << stats_ttable_keyExp.to_string("AES-TTable KeyExp,");
 
      // ---------- AES-NI ----------
      if (!AesAESNI::cpu_has_aesni())
@@ -105,13 +116,24 @@ int main()
      {
           AesAESNI aes_ni(key);
           AESBenchmark benchmark_ni(aes_ni);
-          auto stats_ni = benchmark_ni.benchmark_algorithm(block, iterations, warmup_iterations);
+          auto stats_ni_enc = benchmark_ni.benchmark_encrypt(block, iterations, warmup_iterations);
+          auto stats_ni_dec = benchmark_ni.benchmark_decrypt(block, iterations, warmup_iterations);
 
-          cout << "\n=== AES-NI Benchmark ===\n";
-          cout << stats_ni.to_string("AES-NI,");
+          auto stats_ni_keyExp = benchmark_ni.benchmark_step(AESOperation::KeyExpansionNI, block, iterations, warmup_iterations);
+          auto stats_ni_keyDec = benchmark_ni.benchmark_step(AESOperation::KeyDecryptNI, block, iterations, warmup_iterations);
+
+          cout << "\n=== AES-NI Full Benchmark ===\n";
+          cout << stats_ni_enc.to_string("AES-NI Full Encryption,");
+
+          cout << "\n=== AES-NI Full Benchmark ===\n";
+          cout << stats_ni_dec.to_string("AES-NI Full Decryption,");
+
+          cout << "\nKeyExpansion Step Benchmark:\n";
+          cout << stats_ni_keyExp.to_string("AES-NI KeyExp,");
+
+          cout << "\nKeyDecryption Step Benchmark:\n";
+          cout << stats_ni_keyDec.to_string("AES-NI KeyDec,");         
      }
-
-     //run_aes_bench();
 
      return 0;
 }

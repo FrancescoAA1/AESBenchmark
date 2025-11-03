@@ -5,6 +5,9 @@
 #include <cstring>
 
 class AES128Words {
+
+        friend class AESBenchmark;
+        
 public:
     using u8  = std::uint8_t;
     using u32 = std::uint32_t;

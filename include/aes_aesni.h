@@ -15,6 +15,7 @@ using Block = std::array<Byte, BLOCK_SIZE>;
 
 class AesAESNI : public IAES
 {
+    friend class AESBenchmark;
 public:
     explicit AesAESNI(const Key &key);
 
@@ -24,7 +25,7 @@ public:
     // Decrypt one 16-byte block (AES-128, 10 rounds)
     Block decrypt_block(const Block &block);
 
-        // Returns true if the running CPU supports AES-NI (CPUID ECX bit 25).
+    // Returns true if the running CPU supports AES-NI (CPUID ECX bit 25).
     static bool cpu_has_aesni();
 
 private:

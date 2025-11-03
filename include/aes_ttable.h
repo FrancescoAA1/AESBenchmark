@@ -22,6 +22,8 @@ using Block = std::array<Byte, BLOCK_SIZE>; // Need to internally convert each b
 
 class AesTTable : public IAES
 {
+        friend class AESBenchmark;
+        
 public:
     explicit AesTTable(const Key &key);
 
