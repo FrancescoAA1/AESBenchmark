@@ -7,7 +7,6 @@
 #include <array>
 #include "../include/aes_aesni.h"
 */
-#include "../include/aes_aesni_int.h"
 #include "../include/aes_fileio.h"
 
 // using namespace std;

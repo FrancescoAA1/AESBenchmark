@@ -30,6 +30,17 @@ void print_block(const Block &block)
     std::cout << std::endl;
 }
 
+void write_csv_row(std::ofstream &out, const std::string &impl, const std::string &op, const Stats &s)
+{
+    out << impl << "," 
+        << op << "," 
+        << s.avg_time_ns << ","
+        << s.min_time_ns << ","
+        << s.max_time_ns << ","
+        << s.stddev_time_ns
+        << "\n";
+}
+
 
 int main()
 {
@@ -172,9 +183,9 @@ int main()
      // =========== FILE ENCRYPTION/DECRYPTION ==============
 
      // Filenames
-    std::string input_file  = "input.jpg";
-    std::string encrypted_file = "output_encrypted.jpg";
-    std::string decrypted_file = "output_decrypted.jpg";
+//     std::string input_file  = "input.jpg";
+//     std::string encrypted_file = "output_encrypted.jpg";
+//     std::string decrypted_file = "output_decrypted.jpg";
 
     // Create file IO object
 //     AesFileIo aes_io;
@@ -186,6 +197,37 @@ int main()
 //     aes_io.decrypt_file(encrypted_file, decrypted_file, key);
 
 //     std::cout << "Done. Check " << encrypted_file << " and " << decrypted_file << std::endl;
+
+
+     //GRAPH CREATION
+
+     std::ofstream csv_file("benchmark_results.csv");
+     csv_file << "Implementation,Operation,Avg_ns,Min_ns,Max_ns,StdDev_ns\n";
+
+     write_csv_row(csv_file, "AES-Naive", "Full Encryption", stats_naive_enc);
+     write_csv_row(csv_file, "AES-Naive", "Full Decryption", stats_naive_dec);
+     write_csv_row(csv_file, "AES-Naive", "SubBytes", stats_naive_subbytes);
+     write_csv_row(csv_file, "AES-Naive", "ShiftRows", stats_naive_shiftrows);
+     write_csv_row(csv_file, "AES-Naive", "MixColumns", stats_naive_mixcolumns);
+     write_csv_row(csv_file, "AES-Naive", "MixColumnsFast", stats_naive_mixcolumnsfast);
+     write_csv_row(csv_file, "AES-Naive", "AddRoundKey", stats_naive_addroundkey);
+     write_csv_row(csv_file, "AES-Naive", "InvSubBytes", stats_naive_invsubbytes);
+
+     csv_file.close();
+
+     std::ofstream csv_file2("benchmark_AES.csv");
+     csv_file2 << "Implementation,Operation,Avg_ns,Min_ns,Max_ns,StdDev_ns\n";
+
+     write_csv_row(csv_file2, "AES-Naive", "Encryption", stats_naive_enc);
+     write_csv_row(csv_file2, "AES-Naive", "Decryption", stats_naive_dec);
+     write_csv_row(csv_file2, "AES-TTable", "Encryption", stats_ttable_enc);
+     write_csv_row(csv_file2, "AES-TTable", "Decryption", stats_ttable_dec);
+     // write_csv_row(csv_file2, "AES-NI", "Encryption", stats_ni_);
+     // write_csv_row(csv_file2, "AES-NI", "Decryption", stats_ni_dec);
+
+     csv_file2.close();
+
+     std::system("python ..\\src\\plot_benchmark.py");
 
      return 0;
 }
