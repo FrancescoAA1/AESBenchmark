@@ -20,6 +20,9 @@ using Block = std::array<Byte, BLOCK_SIZE>;
 
 class AesNaive : public IAES
 {
+
+    friend class AESBenchmark;
+    
 public:
     // Constructor
     explicit AesNaive(const Key &key);

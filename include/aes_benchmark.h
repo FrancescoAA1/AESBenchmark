@@ -50,6 +50,28 @@ struct Stats
     }
 };
 
+enum class AESOperation {
+
+    //AES Naive operations
+    EncryptBlock,
+    SubBytes,
+    ShiftRows,
+    MixColumns,
+    MixColumnsFast,
+    AddRoundKey,
+
+    InvSubBytes,
+    InvShiftRows,
+    InvMixColumns,
+
+    KeyExpansion,
+    GFMul,
+
+    //AES TTable operations
+    InitTables
+
+};
+
 class AESBenchmark
 {
 public:
@@ -59,6 +81,14 @@ public:
     // thanks to the interface the function works for both AesNaive and AesTTable and Aes-NI implementations
     Stats benchmark_algorithm(const Block &block, size_t iterations, size_t warmup_iterations);
 
+    // Benchmark a specific step method of AesNaive
+    Stats benchmark_step(AESOperation step, const Block& block, 
+                                   size_t iterations, size_t warmup_iterations);
+
+
+
 private:
     IAES &aes_;
+
+    Stats compute_stats(const std::vector<double> &timings);
 };
