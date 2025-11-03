@@ -33,6 +33,8 @@ void print_block(const Block &block)
 
 int main()
 {
+     // =========== SETUP ============
+
      Key key = {
          0x00, 0x00, 0x00, 0x00,
          0x00, 0x00, 0x00, 0x00,
@@ -47,6 +49,8 @@ int main()
 
      const size_t iterations = 10000;
      const size_t warmup_iterations = 1000;
+
+     // ============= BENCHMARKING ==============
 
      // ---------- AES-Naive ----------
      AesNaive aes_naive(key);
@@ -164,6 +168,24 @@ int main()
           cout << "\nKeyDecryption Step Benchmark:\n";
           cout << stats_ni_keyDec.to_string("AES-NI KeyDec,");         
      }
+
+     // =========== FILE ENCRYPTION/DECRYPTION ==============
+
+     // Filenames
+    std::string input_file  = "input.jpg";
+    std::string encrypted_file = "output_encrypted.jpg";
+    std::string decrypted_file = "output_decrypted.jpg";
+
+    // Create file IO object
+//     AesFileIo aes_io;
+
+//     std::cout << "Encrypting file..." << std::endl;
+//     aes_io.encrypt_file(input_file, encrypted_file, key);
+
+//     std::cout << "Decrypting file..." << std::endl;
+//     aes_io.decrypt_file(encrypted_file, decrypted_file, key);
+
+//     std::cout << "Done. Check " << encrypted_file << " and " << decrypted_file << std::endl;
 
      return 0;
 }
