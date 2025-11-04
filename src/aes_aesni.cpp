@@ -64,8 +64,16 @@ void AesAESNI::expand_key_decrypt(const AES128KeySchedule& enc, AES128KeySchedul
 
 
 AesAESNI::AesAESNI(const Key &key) : key_(key) {
-    expand_key(key_, enc_keys_);
-    expand_key_decrypt(enc_keys_, dec_keys_);
+    
+    if(cpu_has_aesni())
+    {
+        expand_key(key_, enc_keys_);
+        expand_key_decrypt(enc_keys_, dec_keys_);
+    }
+    else
+    {
+        throw std::runtime_error("AES_NI not supported!");
+    }
 }
 
 

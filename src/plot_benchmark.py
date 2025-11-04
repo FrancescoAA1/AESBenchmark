@@ -2,52 +2,63 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-df = pd.read_csv("benchmark_results.csv")
+# ---------- Load Data ----------
+df_steps = pd.read_csv("..\\benchmark\\benchmark_results.csv")
+df_all = pd.read_csv("..\\benchmark\\benchmark_AES.csv")
 
-for impl in df['Implementation'].unique():
-    sub = df[df['Implementation'] == impl]
-    plt.bar(sub['Operation'], sub['Avg_ns'], label=impl)
+# AES-Naive steps
+aes_naive = df_steps[df_steps['Implementation'] == 'AES-Naive']
+steps = ['SubBytes', 'ShiftRows', 'MixColumns', 'MixColumnsFast', 'AddRoundKey', 'InvSubBytes']
+aes_naive_steps = aes_naive[aes_naive['Operation'].isin(steps)]
 
-plt.xticks(rotation=45)
-plt.ylabel("Avg Time (ns)")
-plt.legend()
-plt.tight_layout()
-plt.savefig("benchmark_plot.png")
-plt.show()
-
-
-csv_file = "benchmark_AES.csv"
-df = pd.read_csv(csv_file)
-
-implementations = df['Implementation'].unique()
-operations = df['Operation'].unique()
-
+# All implementations
+implementations = ['AES-Naive', 'AES-TTable', 'AES-NI']
+operations = ['Encryption', 'Decryption']
 bar_width = 0.2
-opacity = 0.8
 
+# ---------- Create figure with 2 subplots (vertical layout) ----------
+fig, axes = plt.subplots(2, 1, figsize=(12,12))
 
-for op in operations:
-    plt.figure(figsize=(10,6))
-    subset = df[df['Operation'] == op]
-    
-    index = np.arange(len(implementations))
-    
-    avg = [subset[subset['Implementation'] == impl]['Avg_ns'].values[0] for impl in implementations]
-    min_time = [subset[subset['Implementation'] == impl]['Min_ns'].values[0] for impl in implementations]
-    max_time = [subset[subset['Implementation'] == impl]['Max_ns'].values[0] for impl in implementations]
-    
-    plt.bar(index - bar_width, min_time, bar_width, label='Min', color='skyblue')
-    plt.bar(index, avg, bar_width, label='Avg', color='orange')
-    plt.bar(index + bar_width, max_time, bar_width, label='Max', color='green')
-    
-    plt.xlabel('Implementation')
-    plt.ylabel('Time (ns)')
-    plt.title(f'AES {op} Benchmark')
-    plt.xticks(index, implementations)
-    plt.legend()
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-    
-    # Salva il grafico
-    plt.tight_layout()
-    plt.savefig(f'benchmark_{op}.png')
-    plt.show()
+# Increase vertical spacing
+plt.subplots_adjust(hspace=0.4)
+
+# ---------- Color Palette ----------
+colors = plt.get_cmap('Set2').colors  # nice pastel palette
+
+# --- Top subplot: AES-Naive steps ---
+axes[0].bar(aes_naive_steps['Operation'], aes_naive_steps['Avg_ns'], color=colors[0])
+axes[0].set_ylabel("Avg Time (ns)")
+axes[0].set_title("AES-Naive Step Benchmark")
+axes[0].set_xticklabels(aes_naive_steps['Operation'], rotation=45)
+axes[0].grid(axis='y', linestyle='--', alpha=0.7)
+
+# --- Bottom subplot: Min/Avg/Max for Encrypt/Decrypt across implementations ---
+x_labels = []
+min_vals, avg_vals, max_vals = [], [], []
+
+# Build data for plotting
+for impl in implementations:
+    for op in operations:
+        subset = df_all[(df_all['Implementation'] == impl) & (df_all['Operation'] == op)]
+        min_vals.append(subset['Min_ns'].values[0])
+        avg_vals.append(subset['Avg_ns'].values[0])
+        max_vals.append(subset['Max_ns'].values[0])
+        x_labels.append(f"{impl}\n{op}")
+
+index = np.arange(len(x_labels))
+
+axes[1].bar(index - bar_width, min_vals, bar_width, label='Min', color=colors[1])
+axes[1].bar(index, avg_vals, bar_width, label='Avg', color=colors[2])
+axes[1].bar(index + bar_width, max_vals, bar_width, label='Max', color=colors[3])
+
+axes[1].set_xticks(index)
+axes[1].set_xticklabels(x_labels, rotation=45)
+axes[1].set_ylabel("Time (ns)")
+axes[1].set_title("AES Encryption/Decryption Benchmark Across Implementations")
+axes[1].legend()
+axes[1].grid(axis='y', linestyle='--', alpha=0.7)
+
+# Save and show
+plt.tight_layout()
+plt.savefig("..\\benchmark\\aes_combined_vertical_colored.png")
+plt.show()

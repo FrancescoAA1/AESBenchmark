@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <array>
 #include <vector>
+#include <stdexcept>
 #include <immintrin.h> // AES-NI intrinsics
 #include "aes.h"
 #include "aes_constants.h"

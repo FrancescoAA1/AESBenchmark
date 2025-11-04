@@ -1,130 +1,74 @@
-/*
-#include "../include/aes_constants.h"
-#include "../include/aes.h"
-#include "../include/aes_naive.h"
-#include <iostream>
-#include <fstream>
-#include <array>
-#include "../include/aes_aesni.h"
-*/
-#include "../include/aes_fileio.h"
+#include "aes_fileio.h"
 
-// using namespace std;
+void AesFileIo::encrypt_file(const std::string &input_filename,
+                             const std::string &output_filename,
+                             IAES &aes) {
+    std::ifstream in(input_filename, std::ios::binary);
+    std::ofstream out(output_filename, std::ios::binary);
 
-// AesFileIo::AesFileIo() {}
-// AesFileIo::~AesFileIo() {}
+    if (!in || !out) {
+        std::perror("Error opening files");
+        return;
+    }
 
-// using Byte = std::uint8_t;
+    std::array<Byte, BLOCK_SIZE> buf{};
+    while (true) {
+        in.read(reinterpret_cast<char*>(buf.data()), BLOCK_SIZE);
+        std::streamsize n = in.gcount();
 
- void AesFileIo::encrypt_file() {
+        if (n == 0) break;  // end of file
 
-    /*AES128U32::Block key = {
-        0x04931F7A,
-        0x169BE2C5,
-        0xF15E3CA8,
-        0x9E11447D
-    };
-    AES128U32 aes(key);
+        if (n < BLOCK_SIZE) {
+            Byte pad = BLOCK_SIZE - n;
+            for (std::streamsize i = n; i < BLOCK_SIZE; i++) buf[i] = pad;
+        }
 
-    AES128U32::Block pt{ 0x6bc1bee2u, 0x2e409f96u, 0xe93d7e11u, 0x7393172au };
-    AES128U32::Block ct;
+        auto encrypted_block = aes.encrypt_block(buf);  // must return 16 bytes
+        out.write(reinterpret_cast<const char*>(encrypted_block.data()), BLOCK_SIZE);
 
-    aes.encrypt_block(pt, ct);
-    */
+        if (n < BLOCK_SIZE) break;  // last block
+    }
+
+    in.close();
+    out.close();
 }
 
-/*
-void AesFileIo::encrypt_file() {
 
-    Key key = {
-        0x7A, 0x1F, 0x93, 0x04,
-        0xC5, 0xE2, 0x9B, 0x16,
-        0xA8, 0x3C, 0x5E, 0xF1,
-        0x7D, 0x44, 0x11, 0x9E};
-*/
-//     AesNaive naive(key);
+void AesFileIo::decrypt_file(const std::string &input_filename,
+                             const std::string &output_filename,
+                             IAES &aes) {
+    std::ifstream in(input_filename, std::ios::binary);
+    std::ofstream out(output_filename, std::ios::binary);
 
-//     std::array<Byte, 16> buf{};                 // will hold up to 16 bytes
-    
-//     std::ifstream f("..\\src\\input.jpg", std::ios::binary);
-//     std::ofstream out("..\\src\\output.jpg", std::ios::binary); 
+    if (!in || !out) {
+        std::perror("Error opening files");
+        return;
+    }
 
-//     if (!f || !out) { std::perror("open"); return; }
+    std::array<Byte, BLOCK_SIZE> buf{};
+    std::array<Byte, BLOCK_SIZE> decrypted_block{};
 
-//     bool end_of_file = false;
-//     int nb_blocks = 0;
+    while (in.read(reinterpret_cast<char*>(buf.data()), BLOCK_SIZE) || in.gcount() > 0) {
+        std::streamsize n = in.gcount();
+        if (n != BLOCK_SIZE) {
+            std::cerr << "Encrypted file corrupted or not a multiple of block size!\n";
+            return;
+        }
 
-//     do 
-//     {
-//         nb_blocks++;
-//         f.read(reinterpret_cast<char*>(buf.data()), buf.size());
-//         std::streamsize n = f.gcount();             // how many bytes were actually read
+        decrypted_block = aes.decrypt_block(buf);
 
-//         if (n < 16 || n == 0){
-//             end_of_file = true;
-//             for (std::streamsize i = n; i < 16; i++){
-//                     buf[i] = static_cast<Byte>(16 - n); //PKCS#7 padding
-//             }
-//         } 
-//         // Encrypt the block
-//         array<Byte, BLOCK_SIZE> encrypted_block = naive.encrypt_block(buf);
-        
-//         out.write(reinterpret_cast<const char*>(encrypted_block.data()), encrypted_block.size());
+        if (in.peek() == EOF) {
+            Byte pad = decrypted_block[BLOCK_SIZE - 1];
+            if (pad < 1 || pad > BLOCK_SIZE) {
+                std::cerr << "Invalid padding!\n";
+                return;
+            }
+            out.write(reinterpret_cast<const char*>(decrypted_block.data()), BLOCK_SIZE - pad);
+        } else {
+            out.write(reinterpret_cast<const char*>(decrypted_block.data()), BLOCK_SIZE);
+        }
+    }
 
-//     } while(!end_of_file);
-//     // Implementation for file encryption
-//     // Open input file, read contents, encrypt using AesNaive, write to output file
-//     f.close();
-//     out.close();
-// }
-// void AesFileIo::decrypt_file() {
-
-//     uint8_t key_ni[16] = {
-//         0x7A, 0x1F, 0x93, 0x04,
-//         0xC5, 0xE2, 0x9B, 0x16,
-//         0xA8, 0x3C, 0x5E, 0xF1,
-//         0x7D, 0x44, 0x11, 0x9E};
-//     // Implementation for file decryption
-
-//     aesni::AES128KeySchedule ks{};
-//     aesni::expand_key(key_ni, ks);
-
-//     aesni::AES128KeySchedule dks{};
-//     aesni::expand_key_decrypt(ks, dks);
-
-//     uint8_t decrypted_ni[16];
-//     std::array<Byte, 16> buf{};                 // will hold up to 16 bytes
-
-//     std::ifstream f("..\\src\\output.jpg", std::ios::binary);
-//     std::ofstream out("..\\src\\decrypted.jpg", std::ios::binary); 
-    
-//     if (!f || !out) { std::perror("open"); return; }
-//     bool end_of_file = false;
-//     int nb_blocks = 0;
-
-//     do 
-//     {
-//         nb_blocks++;
-//         f.read(reinterpret_cast<char*>(buf.data()), buf.size());
-//         std::streamsize n = f.gcount();             // how many bytes were actually read
-//         if (n < 16 || n == 0){
-//             end_of_file = true;
-//         }
-//         // Decrypt the block
-//         aesni::decrypt_block(dks, buf.data(), decrypted_ni);
-
-//         if(end_of_file){
-//             // Remove PKCS#7 padding
-//             Byte padding_length = decrypted_ni[15];
-//             out.write(reinterpret_cast<const char*>(decrypted_ni), sizeof(decrypted_ni) - padding_length);
-//             break;
-//         }else{
-//             out.write(reinterpret_cast<const char*>(decrypted_ni), sizeof(decrypted_ni));
-//         }
-
-//     } while(!end_of_file);
-
-//     f.close();
-//     out.close();
-// }
-
+    in.close();
+    out.close();
+}

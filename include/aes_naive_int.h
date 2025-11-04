@@ -6,7 +6,7 @@
 
 class AES128Words {
 
-        friend class AESBenchmark;
+    friend class AESBenchmark;
         
 public:
     using u8  = std::uint8_t;
