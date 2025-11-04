@@ -19,3 +19,26 @@ How to Setup the Environment (for Windows)
 	5.3) cmake --build . #build project
 	
 	5.4) .\Debug\AES.exe #execute
+# Compile for running Ubuntu 24.04.2 LTS.
+Instrcutions for download and install Ubuntu 24.04 to test code:
+
+How to set enviroment for Windows:
+
+1): wsl --install -d Ubuntu-24.04  #Copy the command in terminal for installing  :  .
+Then setup WSL as default. or first time open, It will ask to create linux username + password
+
+2): Open Ubuntu(wsl) terminal and run :  wsl
+ yourname@DESKTOP-XXXX:~$
+
+3): In abuntu, User windows file should be in directory:  /mnt/c/<folderPath>
+
+4): In Ubuntu terminal make ensure CMake and g++ installed run: 
+   sudo apt update
+   sudo apt install  build-essential -y
+
+5): mkdir build-linux  # Create a separate folder just for ubuntu builds
+
+6): cmake .  # build project, then 
+    make
+7): ./AES    # run code
+   
