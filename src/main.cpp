@@ -199,6 +199,24 @@ int main()
      cout << "\nKeyDecryption Step Benchmark:\n";
      cout << stats_ni_keyDec.to_string("AES-NI KeyDec,");
 
+     // ---------- AES-128Words ----------
+    //  AES128Words aes_words(key);
+
+    //  // Following the test proposed in the book "The Design of Rijndael"
+    //  test_aes_roundtrip(aes_words, block, block1, block2);
+
+    //  // Benchmark AES-128Words
+    //  AESBenchmark benchmark_words(aes_words);
+    //  auto stats_words_enc = benchmark_words.benchmark_encrypt(block, iterations, warmup_iterations);
+    //  auto stats_words_dec = benchmark_words.benchmark_decrypt(block, iterations, warmup_iterations);
+
+    //  // Print benchmark results
+    //  cout << "\n=== AES-128Words Full Benchmark ===\n";
+    //  cout << stats_words_enc.to_string("AES-128Words Full Encryption,");
+
+    //  cout << "\n=== AES-128Words Full Benchmark ===\n";
+    //  cout << stats_words_dec.to_string("AES-128Words Full Decryption,");
+
      // GRAPH CREATION
 
      std::ofstream csv_file("..\\benchmark\\benchmark_results.csv");
