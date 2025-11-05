@@ -1,4 +1,5 @@
-// bench_aes.cpp
+/*
+// // bench_aes.cpp
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -188,7 +189,7 @@ int run_aes_bench() {
         {"inv_shift_rows", wrap_free_int(&AES128Words::inv_shift_rows)},
         {"mix_columns", wrap_free_int(&AES128Words::mix_columns)},
         {"inv_mix_columns", wrap_free_int(&AES128Words::inv_mix_columns)}
-    };
+     };
 
     // Optionally verify outputs of two implementations are equal once
     {
@@ -230,3 +231,4 @@ int run_aes_bench() {
 
     return 0;
 }
+*/

@@ -1,62 +1,232 @@
 #include "aes_benchmark.h"
 #include <algorithm>
 #include <numeric>
+#include <iostream>
+#include <vector>
+#include <chrono>
+#include <cmath>
+#include <functional>
+
+using namespace std;
+
 
 AESBenchmark::AESBenchmark(IAES& iaes) : aes_(iaes) {}
 
-Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, size_t warmup_iterations)
+Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, size_t warmup_iterations, bool encrypt)
 {
-    //why not an array? because we need to reserve a non-fixed size of elements at runtime
     std::vector<double> timings;
     timings.reserve(iterations);
 
-    // Warmup phase
-    for (size_t i = 0; i < warmup_iterations; ++i)
-    {
-        aes_.encrypt_block(block);
-    }
+    // Select operation (MSVC-safe)
+    std::function<void(const Block&)> operation;
+    if (encrypt)
+        operation = [&](const Block& b) { aes_.encrypt_block(b); };
+    else
+        operation = [&](const Block &b)
+        { aes_.decrypt_block(b); };
 
-    // Benchmarking phase
+    // --- Warmup phase ---
+    for (size_t i = 0; i < warmup_iterations; ++i)
+        operation(block);
+
+    // --- Benchmarking phase ---
     for (size_t i = 0; i < iterations; ++i)
     {
         auto start = std::chrono::high_resolution_clock::now();
-        aes_.encrypt_block(block);
+        operation(block);
         auto end = std::chrono::high_resolution_clock::now();
 
-        double duration_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        double duration_ns =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+
         timings.push_back(duration_ns);
     }
+
+    return compute_stats(timings);
+}
+
+Stats AESBenchmark::compute_stats(const std::vector<double>& timings)
+{
+    Stats stats{};  // will hold the results
+
+    if (timings.empty())
+        return stats;
 
     // Calculate statistics
     double min_time = *std::min_element(timings.begin(), timings.end());
     double max_time = *std::max_element(timings.begin(), timings.end());
-    double avg_time = std::accumulate(timings.begin(), timings.end(), 0.0) / iterations;
+    double avg_time = std::accumulate(timings.begin(), timings.end(), 0.0) / timings.size();
 
-    std::sort(timings.begin(), timings.end());
-    double median_time = (iterations % 2 == 0) ?
-                         (timings[iterations / 2 - 1] + timings[iterations / 2]) / 2 :
-                         timings[iterations / 2];
+    std::vector<double> sorted_timings = timings;
+    std::sort(sorted_timings.begin(), sorted_timings.end());
+    double median_time = (sorted_timings.size() % 2 == 0) ?
+                         (sorted_timings[sorted_timings.size() / 2 - 1] + sorted_timings[sorted_timings.size() / 2]) / 2 :
+                         sorted_timings[sorted_timings.size() / 2];
 
     double sq_sum = std::inner_product(timings.begin(), timings.end(), timings.begin(), 0.0);
-    double stddev_time = std::sqrt(sq_sum / iterations - avg_time * avg_time);
+    double stddev_time = std::sqrt(sq_sum / timings.size() - avg_time * avg_time);
 
-    double total_data_mb = static_cast<double>(BLOCK_SIZE * iterations) / (1024 * 1024);
+    double total_data_mb = static_cast<double>(BLOCK_SIZE * timings.size()) / (1024 * 1024);
     double total_time_s = std::accumulate(timings.begin(), timings.end(), 0.0) / 1e9;
     double avg_throughput_mb_s = total_data_mb / total_time_s;
 
     double latency_ns = avg_time;
-    double cpu_frequency_ghz = 3.0;//to be computed well
+    double cpu_frequency_ghz = 3.0; // to be measured precisely
     double avg_cycles_per_byte = (latency_ns * cpu_frequency_ghz) / BLOCK_SIZE;
 
-    return Stats{
-        min_time,
-        max_time,
-        avg_time,
-        median_time,
-        stddev_time,
-        avg_throughput_mb_s,
-        latency_ns,
-        avg_cycles_per_byte
-    };
+    // Store computed values in the struct before returning
+    stats.min_time_ns = min_time;
+    stats.max_time_ns = max_time;
+    stats.avg_time_ns = avg_time;
+    stats.median_time_ns = median_time;
+    stats.stddev_time_ns = stddev_time;
+    stats.avg_throughput_mb_s = avg_throughput_mb_s;
+    stats.latency_ns = latency_ns;
+    stats.avg_cycles_per_byte = avg_cycles_per_byte;
+
+    return stats;
 }
 
+Stats AESBenchmark::benchmark_step(AESOperation step, const Block &block, size_t iterations, size_t warmup_iterations)
+{
+    std::vector<double> timings;
+    timings.reserve(iterations);
+
+    // Identify concrete AES implementation
+    auto* aes_naive  = dynamic_cast<AesNaive*>(&aes_);
+    auto* aes_ttable = dynamic_cast<AesTTable*>(&aes_);
+    auto* aes_ni     = dynamic_cast<AesAESNI*>(&aes_);
+
+    // Define the operation function (captures AES instance)
+    std::function<void(State&)> op_func;
+    State st{}; // Initialize state outside the loop
+
+    if (aes_naive)
+    {
+        st = aes_naive->bytes_to_state(block); // Initialize once
+
+        op_func = [&](State &s)
+        {
+            switch (step)
+            {
+            case AESOperation::SubBytes:
+                aes_naive->sub_bytes(s);
+                break;
+            case AESOperation::ShiftRows:
+                aes_naive->shift_rows(s);
+                break;
+            case AESOperation::MixColumns:
+                aes_naive->mix_columns(s);
+                break;
+            case AESOperation::AddRoundKey:
+                aes_naive->add_round_key(s, aes_naive->get_round_key(0));
+                break;
+            case AESOperation::MixColumnsFast:
+                aes_naive->mix_columns_fast(st);
+                break;
+            case AESOperation::InvSubBytes:
+                aes_naive->inv_sub_bytes(st);
+                break;
+            case AESOperation::InvShiftRows:
+                aes_naive->inv_shift_rows(st);
+                break;
+            case AESOperation::InvMixColumns:
+                aes_naive->inv_mix_columns(st);
+                break;
+            case AESOperation::KeyExpansionNaive:
+                aes_naive->key_expansion(aes_naive->key_);
+                break;
+                // case AESOperation::GFMul:          aes_naive->GF_mul(0x57, 0x83); break;
+
+            case AESOperation::EncryptBlock:
+                aes_naive->encrypt_block(block);
+                break;
+            case AESOperation::DecryptBlock:
+                aes_naive->decrypt_block(block);
+            default:
+                break;
+            }
+        };
+    }
+    else if (aes_ttable)
+    {
+        op_func = [&](State &)
+        {
+            switch (step)
+            {
+            case AESOperation::InitTables:
+                aes_ttable->initTables();
+                break;
+            case AESOperation::KeyExpansionTTable:
+                aes_ttable->key_expansion(aes_ttable->key_);
+                break;
+
+            case AESOperation::EncryptBlock:
+                aes_ttable->encrypt_block(block);
+                break;
+            case AESOperation::DecryptBlock:
+                aes_ttable->decrypt_block(block);
+                break;
+
+            default:
+                break;
+            }
+        };
+    }
+    else if (aes_ni)
+    {
+        op_func = [&](State &)
+        {
+            switch (step)
+            {
+            case AESOperation::KeyExpansionNI:
+                aes_ni->expand_key(aes_ni->key_, aes_ni->enc_keys_);
+                break;
+            case AESOperation::KeyDecryptNI:
+                aes_ni->expand_key_decrypt(aes_ni->dec_keys_, aes_ni->enc_keys_);
+                break;
+
+            case AESOperation::EncryptBlock:
+                aes_ni->encrypt_block(block);
+                break;
+            case AESOperation::DecryptBlock:
+                aes_ni->decrypt_block(block);
+                break;
+
+            default:
+                break;
+            }
+        };
+    }
+    else
+    {
+        op_func = [](State &) {};
+    }
+
+    // WARMUP PHASE
+    for (size_t i = 0; i < warmup_iterations; ++i)
+    {
+        op_func(st);
+    }
+
+    // BENCHMARKING PHASE
+    for (size_t i = 0; i < iterations; ++i)
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+        op_func(st);
+        auto end = std::chrono::high_resolution_clock::now();
+
+        timings.push_back(std::chrono::duration<double, std::nano>(end - start).count());
+    }
+    return compute_stats(timings);
+}
+
+Stats AESBenchmark::benchmark_encrypt(const Block& block, size_t iterations, size_t warmup_iterations)
+{
+    return benchmark_algorithm(block, iterations, warmup_iterations, true);
+}
+
+Stats AESBenchmark::benchmark_decrypt(const Block &block, size_t iterations, size_t warmup_iterations)
+{
+    return benchmark_algorithm(block, iterations, warmup_iterations, false);
+}

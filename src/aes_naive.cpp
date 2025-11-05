@@ -3,7 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <iostream>
-
+#include <algorithm>
 #include "../include/aes_naive.h"
 #include "../include/aes_constants.h"
 

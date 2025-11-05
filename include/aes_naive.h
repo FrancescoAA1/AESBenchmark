@@ -20,6 +20,9 @@ using Block = std::array<Byte, BLOCK_SIZE>;
 
 class AesNaive : public IAES
 {
+
+    friend class AESBenchmark;
+    
 public:
     // Constructor
     explicit AesNaive(const Key &key);
@@ -27,18 +30,6 @@ public:
     // Block encryption/decryption used by encrypt_message and decrypt_message for each 16-byte block
     Block encrypt_block(const Block &block);
     Block decrypt_block(const Block &block);
-
-    // Operations on the state
-    void sub_bytes(State &state);
-    void inv_sub_bytes(State &state);
-    void shift_rows(State &state);
-    void inv_shift_rows(State &state);
-    void mix_columns(State &state);
-    void mix_columns_fast(State &state);
-    void inv_mix_columns(State &state);
-    void add_round_key(State &state, const Key &key);
-    // Used to convert between Block and State representations
-    State bytes_to_state(const Block &block);
 
 private:
     // Constants
@@ -52,8 +43,16 @@ private:
     Key key_;
     // RoundKey Array containing 44 words (4 words for each of the 11 round keys)
     ExpandedKey round_keys_;
-
     
+    // Operations on the state
+    void sub_bytes(State &state);
+    void inv_sub_bytes(State &state);
+    void shift_rows(State &state);
+    void inv_shift_rows(State &state);
+    void mix_columns(State &state);
+    void mix_columns_fast(State &state);
+    void inv_mix_columns(State &state);
+    void add_round_key(State &state, const Key &key);
 
     // Key expansion
     ExpandedKey key_expansion(const Key &key);
@@ -67,6 +66,8 @@ private:
 
     // Helpers
 
+    // Used to convert between Block and State representations
+    State bytes_to_state(const Block &block);
     
     std::array<Byte, BLOCK_SIZE> state_to_bytes(const State &state);
 

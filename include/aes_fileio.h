@@ -1,26 +1,28 @@
-#ifndef AesFileIo_H
-#define AesFileIo_H
+#ifndef AESFILEIO_H
+#define AESFILEIO_H
 
 #include <string>
-#include <vector>
+#include <array>
+#include <cstdint>
+#include <fstream>
+#include <iostream>
+#include "aes.h"
+#include "aes_constants.h"
 
+using Byte = std::uint8_t;
 
-class AesFileIo
-{
+class AesFileIo {
 public:
-    // Constructor
-    AesFileIo();
+    AesFileIo() = default;
+    ~AesFileIo() = default;
 
-    // Main functions used externally
-    // We will be timing their execution time in main.cpp
-    void encrypt_file();
-    void decrypt_file();
+    void encrypt_file(const std::string &input_filename,
+                      const std::string &output_filename,
+                      IAES &aes);
 
-    ~AesFileIo();
-
-private:
-  
-    std::string input_filename_;
-    std::string output_filename_;};
+    void decrypt_file(const std::string &input_filename,
+                      const std::string &output_filename,
+                      IAES &aes);
+};
 
 #endif
