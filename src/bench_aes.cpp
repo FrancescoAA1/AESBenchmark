@@ -137,9 +137,17 @@ int run_aes_bench() {
     // Prepare a random block/state for tests
     std::mt19937_64 rng(12345);
     std::uniform_int_distribution<int> d(0, 255);
-    Block blk{};
-    for (int i = 0; i < (int)blk.size(); ++i) blk[i] = static_cast<uint8_t>(d(rng));
+    //Block blk{};
+    //for (int i = 0; i < (int)blk.size(); ++i) blk[i] = static_cast<uint8_t>(d(rng));
+
+    Block blk = {
+         'H', 'a', 's', 't',
+         'a', ' ', 'l', 'a',
+         ' ', 'v', 'i', 's',
+         't', 'a', '!', '!'};
+
     State st = aes.bytes_to_state(blk);
+   
 
     AES128Words::Block4x32 st_int = aes_int.bytes_to_words_be(blk.data());
 
