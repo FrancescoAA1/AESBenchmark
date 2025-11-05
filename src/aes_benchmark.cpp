@@ -20,10 +20,20 @@ Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, s
     // Select operation (MSVC-safe)
     std::function<void(const Block&)> operation;
     if (encrypt)
-        operation = [&](const Block& b) { aes_.encrypt_block(b); };
+        operation = [&](const Block& b) 
+        { 
+            Block out = aes_.encrypt_block(b); 
+            //Without black_hole, an optimizing compiler might notice
+            // that encrypt_block/decrypt_block results are never used
+            // and skip the calls entirely, giving a wrong benchmark
+            sink(out);
+        };
     else
         operation = [&](const Block &b)
-        { aes_.decrypt_block(b); };
+        { 
+            Block out = aes_.decrypt_block(b); 
+            sink(out);
+        };
 
     // --- Warmup phase ---
     for (size_t i = 0; i < warmup_iterations; ++i)
@@ -45,36 +55,42 @@ Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, s
     return compute_stats(timings);
 }
 
-Stats AESBenchmark::compute_stats(const std::vector<double>& timings)
-{
-    Stats stats{};  // will hold the results
+Stats AESBenchmark::compute_stats(const std::vector<double>& timings) {
+    Stats stats{};  
 
     if (timings.empty())
         return stats;
 
-    // Calculate statistics
-    double min_time = *std::min_element(timings.begin(), timings.end());
-    double max_time = *std::max_element(timings.begin(), timings.end());
-    double avg_time = std::accumulate(timings.begin(), timings.end(), 0.0) / timings.size();
-
     std::vector<double> sorted_timings = timings;
     std::sort(sorted_timings.begin(), sorted_timings.end());
-    double median_time = (sorted_timings.size() % 2 == 0) ?
-                         (sorted_timings[sorted_timings.size() / 2 - 1] + sorted_timings[sorted_timings.size() / 2]) / 2 :
-                         sorted_timings[sorted_timings.size() / 2];
 
-    double sq_sum = std::inner_product(timings.begin(), timings.end(), timings.begin(), 0.0);
-    double stddev_time = std::sqrt(sq_sum / timings.size() - avg_time * avg_time);
+    //Removing Outliers
+    size_t n = sorted_timings.size();
+    size_t lower_index = n * 0.05;
+    size_t upper_index = n * 0.95;
+    std::vector<double> trimmed(sorted_timings.begin() + lower_index,
+                                sorted_timings.begin() + upper_index);
 
-    double total_data_mb = static_cast<double>(BLOCK_SIZE * timings.size()) / (1024 * 1024);
-    double total_time_s = std::accumulate(timings.begin(), timings.end(), 0.0) / 1e9;
+
+    double min_time = *std::min_element(trimmed.begin(), trimmed.end());
+    double max_time = *std::max_element(trimmed.begin(), trimmed.end());
+    double avg_time = std::accumulate(trimmed.begin(), trimmed.end(), 0.0) / trimmed.size();
+
+    double sq_sum = std::inner_product(trimmed.begin(), trimmed.end(), trimmed.begin(), 0.0);
+    double stddev_time = std::sqrt(sq_sum / trimmed.size() - avg_time * avg_time);
+
+    double total_data_mb = static_cast<double>(BLOCK_SIZE * trimmed.size()) / (1024 * 1024);
+    double total_time_s = std::accumulate(trimmed.begin(), trimmed.end(), 0.0) / 1e9;
     double avg_throughput_mb_s = total_data_mb / total_time_s;
 
+    double median_time = (trimmed.size() % 2 == 0) ?
+                         (trimmed[trimmed.size()/2 - 1] + trimmed[trimmed.size()/2]) / 2 :
+                         trimmed[trimmed.size()/2];
+
     double latency_ns = avg_time;
-    double cpu_frequency_ghz = 3.0; // to be measured precisely
+    double cpu_frequency_ghz = 3.0;
     double avg_cycles_per_byte = (latency_ns * cpu_frequency_ghz) / BLOCK_SIZE;
 
-    // Store computed values in the struct before returning
     stats.min_time_ns = min_time;
     stats.max_time_ns = max_time;
     stats.avg_time_ns = avg_time;
@@ -86,6 +102,7 @@ Stats AESBenchmark::compute_stats(const std::vector<double>& timings)
 
     return stats;
 }
+
 
 Stats AESBenchmark::benchmark_step(AESOperation step, const Block &block, size_t iterations, size_t warmup_iterations)
 {

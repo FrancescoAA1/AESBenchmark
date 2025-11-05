@@ -110,4 +110,9 @@ private:
     // Runs the benchmark on the provided block for a given number of iterations and warmup iterations
     // thanks to the interface the function works for both AesNaive and AesTTable and Aes-NI implementations
     Stats benchmark_algorithm(const Block &block, size_t iterations, size_t warmup_iterations, bool encrypt);
+
+    inline void sink(const Block& value)
+    {
+        (void)value;
+    }
 };
