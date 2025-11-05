@@ -1,10 +1,19 @@
 import pandas as pd
+
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
 
+from pathlib import Path
+
 # ---------- Load Data ----------
-df_steps = pd.read_csv("..\\benchmark\\benchmark_results.csv")
-df_all = pd.read_csv("..\\benchmark\\benchmark_AES.csv")
+
+steps_file = Path("..") / "benchmark" / "benchmark_results.csv"
+aes_file   = Path("..") / "benchmark" / "benchmark_AES.csv"
+
+df_steps = pd.read_csv(steps_file)
+df_all   = pd.read_csv(aes_file)
 
 # AES-Naive steps
 aes_naive = df_steps[df_steps['Implementation'] == 'AES-Naive']
@@ -29,7 +38,8 @@ colors = plt.get_cmap('Set2').colors  # nice pastel palette
 axes[0].bar(aes_naive_steps['Operation'], aes_naive_steps['Avg_ns'], color=colors[0])
 axes[0].set_ylabel("Avg Time (ns)")
 axes[0].set_title("AES-Naive Step Benchmark")
-axes[0].set_xticklabels(aes_naive_steps['Operation'], rotation=45)
+axes[0].set_xticks(range(len(aes_naive_steps['Operation'])))
+axes[0].set_xticklabels(aes_naive_steps['Operation'], rotation=0)
 axes[0].grid(axis='y', linestyle='--', alpha=0.7)
 
 # --- Bottom subplot: Min/Avg/Max for Encrypt/Decrypt across implementations ---
@@ -52,7 +62,7 @@ axes[1].bar(index, avg_vals, bar_width, label='Avg', color=colors[2])
 axes[1].bar(index + bar_width, max_vals, bar_width, label='Max', color=colors[3])
 
 axes[1].set_xticks(index)
-axes[1].set_xticklabels(x_labels, rotation=45)
+axes[1].set_xticklabels(x_labels, rotation=0)
 axes[1].set_ylabel("Time (ns)")
 axes[1].set_title("AES Encryption/Decryption Benchmark Across Implementations")
 axes[1].legend()
@@ -60,5 +70,6 @@ axes[1].grid(axis='y', linestyle='--', alpha=0.7)
 
 # Save and show
 plt.tight_layout()
-plt.savefig("..\\benchmark\\aes_combined_vertical_colored.png")
+fig_path = Path("..") / "benchmark" / "aes_combined_vertical_colored.png"
+plt.savefig(fig_path)
 plt.show()

@@ -41,4 +41,18 @@ Then setup WSL as default. or first time open, It will ask to create linux usern
 6): cmake .  # build project, then 
     make
 7): ./AES    # run code
+
+
+----
+
+Setup Python on Ubuntu
+
+sudo apt install python3.12-venv
+Y
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install matplotlib pandas
+sudo apt install python3-tk
+
    

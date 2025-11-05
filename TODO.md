@@ -1,11 +1,16 @@
-1) generalize the class AES / AESNi / AESTTABLE so that they have an interface, repeat the same tests for aes-ni
+MANDATORY
 
+- Find a reliable aes implementation to compare with our classes and integrate it with our code
+- produce the graph that shows the benchmark of the aes Algorithm against ours
+- write the report 
 
+- produce thorough documentstion to make sure the code will execute on professor's machine
 
-6) compute spatial and temporal complexity of each algo
+NICE-TO-HAVE
 
-7) verify the program works on Ubuntu
+- Simplify main.cpp 
+- structure main output better
 
-8) write README section for Ubuntu
+- add more comments
+- add calibration and blackhole (this one is very important for a good methodology)
 
-10) write paper

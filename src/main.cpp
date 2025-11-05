@@ -2,6 +2,7 @@
 #include <vector>
 
 #include <fstream>
+#include <filesystem>
 #include <array>
 #include <cstdint>
 #include <cstdio>
@@ -19,6 +20,7 @@
 #include <bench_aes.h>
 
 using namespace std;
+using namespace std::filesystem;
 
 using Byte = std::uint8_t;
 
@@ -220,7 +222,8 @@ int main()
 
      // GRAPH CREATION
 
-     std::ofstream csv_file("..\\benchmark\\benchmark_results.csv");
+     path benchmark_result = path("..") / "benchmark" / "benchmark_results.csv";
+     std::ofstream csv_file(benchmark_result);
      csv_file << "Implementation,Operation,Avg_ns,Min_ns,Max_ns,StdDev_ns\n";
 
      write_csv_row(csv_file, "AES-Naive", "Full Encryption", stats_naive_enc);
@@ -234,7 +237,8 @@ int main()
 
      csv_file.close();
 
-     std::ofstream csv_file2("..\\benchmark\\benchmark_AES.csv");
+     path benchmark_path = path("..") / "benchmark" / "benchmark_AES.csv";
+     std::ofstream csv_file2(benchmark_path);
      csv_file2 << "Implementation,Operation,Avg_ns,Min_ns,Max_ns,StdDev_ns\n";
 
      write_csv_row(csv_file2, "AES-Naive", "Encryption", stats_naive_enc);
@@ -246,13 +250,15 @@ int main()
 
      csv_file2.close();
 
-     std::system("python ..\\src\\plot_benchmark.py");
+     path py_script = path("..") / "src" / "plot_benchmark.py";
+     string command = "python " + py_script.string();
+     int result = system(command.c_str());
 
      // =========== FILE ENCRYPTION/DECRYPTION ==============
 
-     std::string input_file = "..\\file\\input.jpg";
-     std::string encrypted_file = "..\\file\\output_encrypted.jpg";
-     std::string decrypted_file = "..\\file\\output_decrypted.jpg";
+     path input_file = path("..") / "file" / "input.jpg";
+     path encrypted_file = path("..") / "file" / "output_encrypted.jpg";
+     path decrypted_file = path("..") / "file" / "output_decrypted.jpg";
 
      AesFileIo file_io;
 
