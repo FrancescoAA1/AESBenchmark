@@ -40,7 +40,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include_directories(include)
 enable_testing()
-add_executable(AES src/main.cpp src/aes_naive.cpp src/aes_ttable.cpp src/aes_aesni.cpp src/aes_benchmark.cpp src/aes_fileio.cpp src/aes_naive_int.cpp src/bench_aes.cpp)
+add_executable(AES src/main.cpp src/aes_naive.cpp src/aes_ttable.cpp src/aes_aesni.cpp src/aes_benchmark.cpp src/aes_fileio.cpp src/aes_naive_int.cpp)
 set_source_files_properties(src/aes_aesni.cpp PROPERTIES    
     COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:GNU,Clang>:-maes;-mpclmul>"
 )

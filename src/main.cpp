@@ -18,7 +18,6 @@
 //#include <aes_botan_wrapper.h>
 
 #include "aes_constants.h"
-#include <bench_aes.h>
 
 using namespace std;
 using namespace std::filesystem;
