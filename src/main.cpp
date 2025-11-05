@@ -262,5 +262,7 @@ int main()
      std::cout << "Decrypting with AES-Naive...\n";
      file_io.decrypt_file(encrypted_file, decrypted_file, aes_ttable);
 
+     cout << "Ubuntu";
+
      return 0;
 }
