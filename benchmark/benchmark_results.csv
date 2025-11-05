@@ -1,9 +1,9 @@
 Implementation,Operation,Avg_ns,Min_ns,Max_ns,StdDev_ns
-AES-Naive,Full Encryption,10703.4,7475,167771,4779.55
-AES-Naive,Full Decryption,12112.4,11755,150978,1831.38
-AES-Naive,SubBytes,124.244,112,3771,41.9084
-AES-Naive,ShiftRows,118.473,110,2537,28.0042
-AES-Naive,MixColumns,465.965,455,3967,52.9528
-AES-Naive,MixColumnsFast,130.655,126,3371,35.359
-AES-Naive,AddRoundKey,158.395,143,1474,14.9932
-AES-Naive,InvSubBytes,117.652,111,1570,14.8061
+AES-Naive,Full Encryption,722.456,547,5560,186.278
+AES-Naive,Full Decryption,1678.1,1132,6010,159.327
+AES-Naive,SubBytes,27.2222,21,120,5.33393
+AES-Naive,ShiftRows,27.2856,21,3688,37.5197
+AES-Naive,MixColumns,63.9824,56,5658,56.6501
+AES-Naive,MixColumnsFast,37.5682,26,95,7.56259
+AES-Naive,AddRoundKey,24.9343,22,176,2.92027
+AES-Naive,InvSubBytes,32.1461,22,100,3.16837

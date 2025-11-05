@@ -54,5 +54,6 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install matplotlib pandas
 sudo apt install python3-tk
-
+sudo apt install libbotan-3-dev
+sudo apt install pkg-config
    

@@ -15,6 +15,7 @@
 #include <aes_fileio.h>
 #include <aes_benchmark.h>
 #include <aes_naive_int.h>
+#include <aes_botan_wrapper.h>
 
 #include "aes_constants.h"
 #include <bench_aes.h>
@@ -219,6 +220,19 @@ int main()
 
     cout << "\n=== AES-128 4XInt Full Benchmark ===\n";
     cout << stats_int_dec.to_string("AES-128 4XInt Full Decryption,");
+
+
+    AesBotanWrapper aes_botan(key);
+    test_aes_roundtrip(aes_botan, block, block1, block2);
+
+    std::cout << "\n=== AES-Botan Benchmark ===\n";
+
+    AESBenchmark benchmark_botan(aes_botan);
+    auto stats_botan_enc = benchmark_botan.benchmark_encrypt(block, iterations, warmup_iterations);
+    auto stats_botan_dec = benchmark_botan.benchmark_decrypt(block, iterations, warmup_iterations);
+
+    std::cout << stats_botan_enc.to_string("AES-Botan Encryption,");
+    std::cout << stats_botan_dec.to_string("AES-Botan Decryption,");
 
      // GRAPH CREATION
 
