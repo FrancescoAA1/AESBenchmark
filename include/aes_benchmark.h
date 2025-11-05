@@ -50,9 +50,9 @@ std::string to_string(const std::string &aes_name) const
         << "Avg(ns): " << avg_time_ns << "ns \r\n"
         << "Median(ns): " << median_time_ns << "ns \r\n"
         << "StdDev(ns): " << stddev_time_ns << "ns \r\n"
-        << "Throughput(MB/s): " << avg_throughput_mb_s << "ns \r\n"
+        << "Throughput(MB/s): " << avg_throughput_mb_s << " MB/s \r\n"
         << "Latency(ns): " << latency_ns << "ns \r\n"
-        << "Cycles/byte: " << avg_cycles_per_byte << "ns \n";
+        << "Cycles/byte: " << avg_cycles_per_byte << " \n";
 
     return oss.str();
 }

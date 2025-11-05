@@ -247,6 +247,12 @@ int main()
      write_csv_row(csv_file, "AES-Naive", "MixColumnsFast", stats_naive_mixcolumnsfast);
      write_csv_row(csv_file, "AES-Naive", "AddRoundKey", stats_naive_addroundkey);
      write_csv_row(csv_file, "AES-Naive", "InvSubBytes", stats_naive_invsubbytes);
+     write_csv_row(csv_file, "AES-Naive", "InvShiftRows", stats_naive_invshiftrows);
+     write_csv_row(csv_file, "AES-Naive", "InvMixColumns", stats_naive_invmixcolumns);
+     write_csv_row(csv_file, "AES-Naive", "KeyExpansion", stats_naive_keyexpansion);
+     write_csv_row(csv_file, "AES-TTable", "KeyExpansion", stats_ttable_keyExp);
+     write_csv_row(csv_file, "AES-TTable", "InitTables", stats_ttable_initTables);
+     write_csv_row(csv_file, "AES-NI", "KeyExpansion", stats_ni_keyExp);
 
      csv_file.close();
 
@@ -260,6 +266,10 @@ int main()
      write_csv_row(csv_file2, "AES-TTable", "Decryption", stats_ttable_dec);
      write_csv_row(csv_file2, "AES-NI", "Encryption", stats_ni_enc);
      write_csv_row(csv_file2, "AES-NI", "Decryption", stats_ni_dec);
+    //  write_csv_row(csv_file2, "AES-Botan", "Encryption", stats_botan_enc);
+    //  write_csv_row(csv_file2, "AES-Botan", "Decryption", stats_botan_dec);
+     write_csv_row(csv_file2, "AES-Naive-Int", "Encryption", stats_int_enc);
+     write_csv_row(csv_file2, "AES-Naive-Int", "Decryption", stats_int_dec);
 
      csv_file2.close();
 
@@ -269,6 +279,7 @@ int main()
 
      // =========== FILE ENCRYPTION/DECRYPTION ==============
 
+     //TODO: encrypt/decrypt with all three algo and compare throughput with block to block
      path input_file = path("..") / "file" / "input.jpg";
      path encrypted_file = path("..") / "file" / "output_encrypted.jpg";
      path decrypted_file = path("..") / "file" / "output_decrypted.jpg";
@@ -276,10 +287,9 @@ int main()
      AesFileIo file_io;
 
      std::cout << "Encrypting with AES-Naive...\n";
-    file_io.encrypt_file(input_file.string(), encrypted_file.string(), aes_naive);
+     file_io.encrypt_file(input_file.string(), encrypted_file.string(), aes_naive);
 
      std::cout << "Decrypting with AES-Naive...\n";
-
      file_io.decrypt_file(encrypted_file.string(), decrypted_file.string(), aes_naive);
 
      return 0;

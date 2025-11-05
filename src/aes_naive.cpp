@@ -110,6 +110,30 @@ void AesNaive::inv_sub_bytes(State &state)
 }
 
 // Second operation of the encryption process (in the looping rounds)
+
+//NOTE: SLOWER THAN MIX COLUMNS BECAUSE OF ROTATE!!!
+
+// void AesNaive::shift_rows(State &state)
+// {
+//     // Row 1: shift left by 1
+//     Byte tmp = state[1][0];
+//     state[1][0] = state[1][1];
+//     state[1][1] = state[1][2];
+//     state[1][2] = state[1][3];
+//     state[1][3] = tmp;
+
+//     // Row 2: shift left by 2
+//     std::swap(state[2][0], state[2][2]);
+//     std::swap(state[2][1], state[2][3]);
+
+//     // Row 3: shift left by 3 (or right by 1)
+//     tmp = state[3][3];
+//     state[3][3] = state[3][2];
+//     state[3][2] = state[3][1];
+//     state[3][1] = state[3][0];
+//     state[3][0] = tmp;
+// }
+
 void AesNaive::shift_rows(State &state)
 {
     // Row 0: No shift
