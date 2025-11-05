@@ -13,6 +13,7 @@
 #include <aes_aesni.h>
 #include <aes_fileio.h>
 #include <aes_benchmark.h>
+#include <aes_naive_int.h>
 
 #include "aes_constants.h"
 #include <bench_aes.h>
@@ -199,23 +200,23 @@ int main()
      cout << "\nKeyDecryption Step Benchmark:\n";
      cout << stats_ni_keyDec.to_string("AES-NI KeyDec,");
 
-     // ---------- AES-128Words ----------
-    //  AES128Words aes_words(key);
+     // ---------- AES-128 4XInt ----------
+    AESNaiveInt aes_int(key);
 
-    //  // Following the test proposed in the book "The Design of Rijndael"
-    //  test_aes_roundtrip(aes_words, block, block1, block2);
+    // Following the test proposed in the book "The Design of Rijndael"
+    test_aes_roundtrip(aes_int, block, block1, block2);
 
-    //  // Benchmark AES-128Words
-    //  AESBenchmark benchmark_words(aes_words);
-    //  auto stats_words_enc = benchmark_words.benchmark_encrypt(block, iterations, warmup_iterations);
-    //  auto stats_words_dec = benchmark_words.benchmark_decrypt(block, iterations, warmup_iterations);
+    // Benchmark AES-128 4XInt
+    AESBenchmark benchmark_int(aes_int);
+    auto stats_int_enc = benchmark_int.benchmark_encrypt(block, iterations, warmup_iterations);
+    auto stats_int_dec = benchmark_int.benchmark_decrypt(block, iterations, warmup_iterations);
 
-    //  // Print benchmark results
-    //  cout << "\n=== AES-128Words Full Benchmark ===\n";
-    //  cout << stats_words_enc.to_string("AES-128Words Full Encryption,");
+    // Print benchmark results
+    cout << "\n=== AES-128 4XInt Full Benchmark ===\n";
+    cout << stats_int_enc.to_string("AES-128 4XInt Full Encryption,");
 
-    //  cout << "\n=== AES-128Words Full Benchmark ===\n";
-    //  cout << stats_words_dec.to_string("AES-128Words Full Decryption,");
+    cout << "\n=== AES-128 4XInt Full Benchmark ===\n";
+    cout << stats_int_dec.to_string("AES-128 4XInt Full Decryption,");
 
      // GRAPH CREATION
 

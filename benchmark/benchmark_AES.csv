@@ -1,7 +1,7 @@
 Implementation,Operation,Avg_ns,Min_ns,Max_ns,StdDev_ns
-AES-Naive,Encryption,14755.9,13700,144600,2191.6
-AES-Naive,Decryption,19337.4,18700,58300,1029.37
-AES-TTable,Encryption,1325.08,1000,48000,702.572
-AES-TTable,Decryption,1045.39,900,13500,180.623
-AES-NI,Encryption,105.35,0,1700,40.5263
-AES-NI,Decryption,110.87,0,3400,60.4884
+AES-Naive,Encryption,41907.9,23800,316200,19016.4
+AES-Naive,Decryption,67799.5,35700,387700,21491.8
+AES-TTable,Encryption,3109.92,2400,111200,1718.69
+AES-TTable,Decryption,3974.18,3200,81200,1505.29
+AES-NI,Encryption,233.41,200,14400,163.96
+AES-NI,Decryption,300.05,200,48000,571.382

@@ -1,11 +1,15 @@
-#include "../include/aes_naive_int.h"
+#include "aes_naive_int.h"
+#include <cstdint>
+
+namespace { // file-scope tables use a public type (not AESNaiveInt::u8)
+
+// Use a file-local public type, not the class’s private alias.
+using u8_file = std::uint8_t;
 
 // ===================== S-box / Inv S-box / Rcon =====================
 
-static const AES128Words::u8 SBOX[256] = {
-  // 0x00 .. 0x0F
+static const u8_file SBOX[256] = {
   0x63,0x7C,0x77,0x7B,0xF2,0x6B,0x6F,0xC5,0x30,0x01,0x67,0x2B,0xFE,0xD7,0xAB,0x76,
-  // 0x10 ..
   0xCA,0x82,0xC9,0x7D,0xFA,0x59,0x47,0xF0,0xAD,0xD4,0xA2,0xAF,0x9C,0xA4,0x72,0xC0,
   0xB7,0xFD,0x93,0x26,0x36,0x3F,0xF7,0xCC,0x34,0xA5,0xE5,0xF1,0x71,0xD8,0x31,0x15,
   0x04,0xC7,0x23,0xC3,0x18,0x96,0x05,0x9A,0x07,0x12,0x80,0xE2,0xEB,0x27,0xB2,0x75,
@@ -23,7 +27,7 @@ static const AES128Words::u8 SBOX[256] = {
   0x8C,0xA1,0x89,0x0D,0xBF,0xE6,0x42,0x68,0x41,0x99,0x2D,0x0F,0xB0,0x54,0xBB,0x16
 };
 
-static const AES128Words::u8 INV_SBOX[256] = {
+static const u8_file INV_SBOX[256] = {
   0x52,0x09,0x6A,0xD5,0x30,0x36,0xA5,0x38,0xBF,0x40,0xA3,0x9E,0x81,0xF3,0xD7,0xFB,
   0x7C,0xE3,0x39,0x82,0x9B,0x2F,0xFF,0x87,0x34,0x8E,0x43,0x44,0xC4,0xDE,0xE9,0xCB,
   0x54,0x7B,0x94,0x32,0xA6,0xC2,0x23,0x3D,0xEE,0x4C,0x95,0x0B,0x42,0xFA,0xC3,0x4E,
@@ -42,19 +46,18 @@ static const AES128Words::u8 INV_SBOX[256] = {
   0x17,0x2B,0x04,0x7E,0xBA,0x77,0xD6,0x26,0xE1,0x69,0x14,0x63,0x55,0x21,0x0C,0x7D
 };
 
-static const AES128Words::u8 RCON[11] = {
-    0x00, // unused (round 0)
-    0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36
-};
+// RCON size 11 (index 0 unused)
+static const u8_file RCON[11] = { 0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36 };
+
+} // namespace
 
 // ===================== Inline helpers =====================
 
-inline AES128Words::u8 AES128Words::sbox(u8 x)      { return SBOX[x]; }
-inline AES128Words::u8 AES128Words::inv_sbox(u8 x)  { return INV_SBOX[x]; }
-inline AES128Words::u8 AES128Words::xtime(u8 x)     { return (u8)((x<<1) ^ (0x1B & (-(x>>7)))); }
+inline AESNaiveInt::u8 AESNaiveInt::sbox(u8 x)      { return SBOX[x]; }
+inline AESNaiveInt::u8 AESNaiveInt::inv_sbox(u8 x)  { return INV_SBOX[x]; }
+inline AESNaiveInt::u8 AESNaiveInt::xtime8(u8 x)    { return (u8)((x<<1) ^ (0x1B & (-(x>>7)))); }
 
-inline AES128Words::u8 AES128Words::gf_mul(u8 a, u8 b) {
-    // Generic GF(2^8) multiply used for inverse MixColumns.
+inline AESNaiveInt::u8 AESNaiveInt::gf_mul(u8 a, u8 b) {
     u8 res = 0;
     for (int i=0; i<8; ++i) {
         if (b & 1) res ^= a;
@@ -66,26 +69,26 @@ inline AES128Words::u8 AES128Words::gf_mul(u8 a, u8 b) {
     return res;
 }
 
-inline AES128Words::u32 AES128Words::pack(u8 r0,u8 r1,u8 r2,u8 r3) {
+inline AESNaiveInt::u32 AESNaiveInt::pack(u8 r0,u8 r1,u8 r2,u8 r3) {
     return (u32(r0)<<24) | (u32(r1)<<16) | (u32(r2)<<8) | u32(r3);
 }
-inline AES128Words::u8 AES128Words::b0(u32 w){ return (u8)(w>>24); }
-inline AES128Words::u8 AES128Words::b1(u32 w){ return (u8)(w>>16); }
-inline AES128Words::u8 AES128Words::b2(u32 w){ return (u8)(w>> 8); }
-inline AES128Words::u8 AES128Words::b3(u32 w){ return (u8)(w>> 0); }
+inline AESNaiveInt::u8 AESNaiveInt::b0(u32 w){ return (u8)(w>>24); }
+inline AESNaiveInt::u8 AESNaiveInt::b1(u32 w){ return (u8)(w>>16); }
+inline AESNaiveInt::u8 AESNaiveInt::b2(u32 w){ return (u8)(w>> 8); }
+inline AESNaiveInt::u8 AESNaiveInt::b3(u32 w){ return (u8)(w>> 0); }
 
-inline AES128Words::u32 AES128Words::sub_bytes_word(u32 w){
+inline AESNaiveInt::u32 AESNaiveInt::sub_bytes_word(u32 w){
     return pack(sbox(b0(w)), sbox(b1(w)), sbox(b2(w)), sbox(b3(w)));
 }
 
-inline void AES128Words::sub_bytes(Block4x32 &S){
+void AESNaiveInt::sub_bytes(std::array<u32,4> &S){
     S[0] = sub_bytes_word(S[0]);
     S[1] = sub_bytes_word(S[1]);
     S[2] = sub_bytes_word(S[2]);
     S[3] = sub_bytes_word(S[3]);
 }
 
-inline void AES128Words::shift_rows(Block4x32 &S){
+void AESNaiveInt::shift_rows(std::array<u32,4> &S){
     u32 c0=S[0], c1=S[1], c2=S[2], c3=S[3];
     // Row0 unchanged
     u8 r00=b0(c0), r01=b0(c1), r02=b0(c2), r03=b0(c3);
@@ -102,10 +105,9 @@ inline void AES128Words::shift_rows(Block4x32 &S){
     S[3] = pack(r03,r13,r23,r33);
 }
 
-inline AES128Words::u32 AES128Words::mix_column(u32 w){
-    // Uses GMUL2=xtime(x), GMUL3=xtime(x)^x
+inline AESNaiveInt::u32 AESNaiveInt::mix_column(u32 w){
     u8 a0=b0(w), a1=b1(w), a2=b2(w), a3=b3(w);
-    u8 a0_2 = xtime(a0), a1_2 = xtime(a1), a2_2 = xtime(a2), a3_2 = xtime(a3);
+    u8 a0_2 = xtime8(a0), a1_2 = xtime8(a1), a2_2 = xtime8(a2), a3_2 = xtime8(a3);
     u8 a0_3 = (u8)(a0_2 ^ a0), a1_3 = (u8)(a1_2 ^ a1), a2_3 = (u8)(a2_2 ^ a2), a3_3 = (u8)(a3_2 ^ a3);
 
     u8 r0 = (u8)(a0_2 ^ a1_3 ^ a2 ^ a3);
@@ -115,14 +117,14 @@ inline AES128Words::u32 AES128Words::mix_column(u32 w){
     return pack(r0,r1,r2,r3);
 }
 
-inline void AES128Words::mix_columns(Block4x32 &S){
+void AESNaiveInt::mix_columns(std::array<u32,4> &S){
     S[0] = mix_column(S[0]);
     S[1] = mix_column(S[1]);
     S[2] = mix_column(S[2]);
     S[3] = mix_column(S[3]);
 }
 
-inline void AES128Words::add_round_key(Block4x32 &S, const RoundKey4x32 &RK){
+inline void AESNaiveInt::add_round_key(std::array<u32,4> &S, const RoundKey4x32 &RK){
     S[0] ^= RK[0];
     S[1] ^= RK[1];
     S[2] ^= RK[2];
@@ -131,8 +133,7 @@ inline void AES128Words::add_round_key(Block4x32 &S, const RoundKey4x32 &RK){
 
 // ----- Inverse -----
 
-inline AES128Words::u32 AES128Words::inv_mix_column(u32 w){
-    // Multiply by {0e,0b,0d,09} per AES spec using generic gf_mul.
+inline AESNaiveInt::u32 AESNaiveInt::inv_mix_column(u32 w){
     u8 a0=b0(w), a1=b1(w), a2=b2(w), a3=b3(w);
     u8 r0 = (u8)(gf_mul(a0,0x0e)^gf_mul(a1,0x0b)^gf_mul(a2,0x0d)^gf_mul(a3,0x09));
     u8 r1 = (u8)(gf_mul(a0,0x09)^gf_mul(a1,0x0e)^gf_mul(a2,0x0b)^gf_mul(a3,0x0d));
@@ -141,14 +142,14 @@ inline AES128Words::u32 AES128Words::inv_mix_column(u32 w){
     return pack(r0,r1,r2,r3);
 }
 
-inline void AES128Words::inv_mix_columns(Block4x32 &S){
+void AESNaiveInt::inv_mix_columns(std::array<u32,4> &S){
     S[0] = inv_mix_column(S[0]);
     S[1] = inv_mix_column(S[1]);
     S[2] = inv_mix_column(S[2]);
     S[3] = inv_mix_column(S[3]);
 }
 
-inline void AES128Words::inv_shift_rows(Block4x32 &S){
+void AESNaiveInt::inv_shift_rows(std::array<u32,4> &S){
     u32 c0=S[0], c1=S[1], c2=S[2], c3=S[3];
     // Row0 unchanged
     u8 r00=b0(c0), r01=b0(c1), r02=b0(c2), r03=b0(c3);
@@ -165,7 +166,7 @@ inline void AES128Words::inv_shift_rows(Block4x32 &S){
     S[3] = pack(r03,r13,r23,r33);
 }
 
-inline void AES128Words::inv_sub_bytes(Block4x32 &S){
+void AESNaiveInt::inv_sub_bytes(std::array<u32,4> &S){
     S[0] = pack(inv_sbox(b0(S[0])), inv_sbox(b1(S[0])), inv_sbox(b2(S[0])), inv_sbox(b3(S[0])));
     S[1] = pack(inv_sbox(b0(S[1])), inv_sbox(b1(S[1])), inv_sbox(b2(S[1])), inv_sbox(b3(S[1])));
     S[2] = pack(inv_sbox(b0(S[2])), inv_sbox(b1(S[2])), inv_sbox(b2(S[2])), inv_sbox(b3(S[2])));
@@ -174,14 +175,12 @@ inline void AES128Words::inv_sub_bytes(Block4x32 &S){
 
 // ===================== Key expansion (AES-128) =====================
 
-AES128Words::RoundKey4x32 AES128Words::make_roundkey_from_words(u32 w0,u32 w1,u32 w2,u32 w3){
+AESNaiveInt::RoundKey4x32 AESNaiveInt::make_roundkey_from_words(u32 w0,u32 w1,u32 w2,u32 w3){
     return RoundKey4x32{w0,w1,w2,w3};
 }
 
-void AES128Words::expand_key_128(const u8 key[16]){
-    // AES-128: 44 words W[0..43]; every 4 words form a round key (11 keys).
+void AESNaiveInt::expand_key_128(const u8 key[16]){
     u32 W[44];
-    // pack initial key (big-endian per word)
     for(int i=0;i<4;++i){
         int k = 4*i;
         W[i] = pack(key[k], key[k+1], key[k+2], key[k+3]);
@@ -190,7 +189,6 @@ void AES128Words::expand_key_128(const u8 key[16]){
         return pack(sbox(b0(w)), sbox(b1(w)), sbox(b2(w)), sbox(b3(w)));
     };
     auto rotword = [&](u32 w)->u32{
-        // [b0,b1,b2,b3] -> [b1,b2,b3,b0]
         return pack(b1(w), b2(w), b3(w), b0(w));
     };
 
@@ -203,7 +201,6 @@ void AES128Words::expand_key_128(const u8 key[16]){
         W[i] = W[i-4] ^ temp;
     }
 
-    // store into rk_
     for(int round=0; round<=10; ++round){
         rk_[round] = make_roundkey_from_words(W[4*round+0], W[4*round+1], W[4*round+2], W[4*round+3]);
     }
@@ -211,13 +208,12 @@ void AES128Words::expand_key_128(const u8 key[16]){
 
 // ===================== Public API =====================
 
-AES128Words::AES128Words(const u8 key[16]){
-    expand_key_128(key);
+AESNaiveInt::AESNaiveInt(const Key& key){
+    expand_key_128(key.data());
 }
 
-AES128Words::Block4x32 AES128Words::bytes_to_words_be(const u8 in[16]){
-    Block4x32 S{};
-    // columns are consecutive 4 bytes
+std::array<AESNaiveInt::u32,4> AESNaiveInt::bytes_to_words_be(const u8 in[16]){
+    std::array<u32,4> S{};
     for(int c=0;c<4;++c){
         int k = 4*c;
         S[c] = pack(in[k+0], in[k+1], in[k+2], in[k+3]);
@@ -225,7 +221,7 @@ AES128Words::Block4x32 AES128Words::bytes_to_words_be(const u8 in[16]){
     return S;
 }
 
-void AES128Words::words_to_bytes_be(const Block4x32 &state, u8 out[16]){
+void AESNaiveInt::words_to_bytes_be(const std::array<u32,4> &state, u8 out[16]){
     for(int c=0;c<4;++c){
         int k=4*c;
         out[k+0]=b0(state[c]);
@@ -235,7 +231,7 @@ void AES128Words::words_to_bytes_be(const Block4x32 &state, u8 out[16]){
     }
 }
 
-void AES128Words::encrypt(Block4x32 &S) const {
+void AESNaiveInt::encrypt_words(std::array<u32,4> &S) const {
     add_round_key(S, rk_[0]);
     for (int r = 1; r < 10; ++r) {
         sub_bytes(S);
@@ -248,13 +244,12 @@ void AES128Words::encrypt(Block4x32 &S) const {
     add_round_key(S, rk_[10]);
 }
 
-void AES128Words::decrypt(Block4x32 &S) const {
+void AESNaiveInt::decrypt_words(std::array<u32,4> &S) const {
     add_round_key(S, rk_[10]);
     for (int r = 9; r >= 1; --r) {
         inv_shift_rows(S);
         inv_sub_bytes(S);
         add_round_key(S, rk_[r]);
-        // Inverse MixColumns for rounds 1..9
         inv_mix_columns(S);
     }
     inv_shift_rows(S);
@@ -262,14 +257,18 @@ void AES128Words::decrypt(Block4x32 &S) const {
     add_round_key(S, rk_[0]);
 }
 
-void AES128Words::encrypt_bytes(const u8 in[16], u8 out[16]) const {
-    Block4x32 S = bytes_to_words_be(in);
-    encrypt(S);
-    words_to_bytes_be(S, out);
+Block AESNaiveInt::encrypt_block(const Block& block){
+    std::array<u32,4> S = bytes_to_words_be(block.data());
+    encrypt_words(S);
+    Block out{};
+    words_to_bytes_be(S, out.data());
+    return out;
 }
 
-void AES128Words::decrypt_bytes(const u8 in[16], u8 out[16]) const {
-    Block4x32 S = bytes_to_words_be(in);
-    decrypt(S);
-    words_to_bytes_be(S, out);
+Block AESNaiveInt::decrypt_block(const Block& block){
+    std::array<u32,4> S = bytes_to_words_be(block.data());
+    decrypt_words(S);
+    Block out{};
+    words_to_bytes_be(S, out.data());
+    return out;
 }
