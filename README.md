@@ -48,6 +48,7 @@ Setup Python on Windows
 
 navigate to root folder "aesbenchmark"
 python -m venv .venv
+	it depends on your python version if the activate is in "Script" or "bin" folder
 .\.venv\Scripts\activate
 python.exe -m pip install --upgrade pip
 pip install matplotlib pandas
