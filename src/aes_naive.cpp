@@ -12,6 +12,7 @@ using namespace std;
 // Byte substitution table - constructed with multiplicative inverse of each byte in the
 //  finite field GF(2^8) + Affine transformation
 
+
 constexpr std::array<Byte, S_BOX_SIZE> AesNaive::S_BOX = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -77,10 +78,23 @@ constexpr std::array<std::array<Byte, N_COLS>, N_ROWS> AesNaive::MIX_COL_MATRIX_
                                                                                    {0x0d, 0x09, 0x0e, 0x0b},
                                                                                    {0x0b, 0x0d, 0x09, 0x0e}}};
 
-// Constructor
+
+/*
+// Precomputed xtable for faster xtime operation
+alignas(64) static Byte XT[256];
+
+static void init_xtable() {
+    for (int a = 0; a < 256; ++a) {
+        uint8_t x = uint8_t(a);
+        XT[a] = uint8_t((x << 1) ^ ((x & 0x80) ? 0x1B : 0x00));
+    }
+}
+inline Byte xt(Byte a) { return XT[a]; }
+*/
+                                                                                   // Constructor
 // We assign the key and generate the round keys using key expansion
 AesNaive::AesNaive(const Key &key) : key_(key)
-{
+{   
     round_keys_ = key_expansion(key_);
 }
 
@@ -227,6 +241,29 @@ void AesNaive::mix_columns_fast(State &state)
         Byte t = a0 ^ a1 ^ a2 ^ a3;
 
         // MixColumns core: uses xtime (multiply by 2 in GF(2^8))
+        // Using the precomputed xtable (xt) for speed
+
+        state[0][c] = a0 ^ t ^ xtime(a0 ^ a1);
+        state[1][c] = a1 ^ t ^ xtime(a1 ^ a2);
+        state[2][c] = a2 ^ t ^ xtime(a2 ^ a3);
+        state[3][c] = a3 ^ t ^ xtime(a3 ^ a0);
+
+    }
+}
+/*
+void AesNaive::mix_columns_fast(State &state)
+{
+    for (int c = 0; c < 4; ++c)
+    {
+        Byte a0 = state[0][c];
+        Byte a1 = state[1][c];
+        Byte a2 = state[2][c];
+        Byte a3 = state[3][c];
+
+        // XOR of the entire column
+        Byte t = a0 ^ a1 ^ a2 ^ a3;
+
+        // MixColumns core: uses xtime (multiply by 2 in GF(2^8))
         state[0][c] = a0 ^ t ^ Xtime(a0 ^ a1);
         state[1][c] = a1 ^ t ^ Xtime(a1 ^ a2);
         state[2][c] = a2 ^ t ^ Xtime(a2 ^ a3);
@@ -234,6 +271,8 @@ void AesNaive::mix_columns_fast(State &state)
         
     }
 }
+    */
+
 
 void AesNaive::inv_mix_columns(State &state)
 {
@@ -400,6 +439,8 @@ Byte AesNaive::Xtime(Byte a)
     return static_cast<Byte>(((a << 1) & 0xFF) ^ ((a & 0x80) ? 0x1B : 0x00));
 }
 
+/* Galois Field multiplication */
+
 Byte AesNaive::GF_mul(Byte a, Byte b)
 {
     if (b == 1)
@@ -420,6 +461,21 @@ Byte AesNaive::GF_mul(Byte a, Byte b)
 
     return 0;
 }
+/*
+Byte AesNaive::GF_mul(Byte a, Byte b)
+{
+    Byte res = 0;
+    for (int i=0; i<8; ++i) {
+        if (b & 1) res ^= a;
+        Byte hi = a & 0x80;
+        a <<= 1;
+        if (hi) a ^= 0x1B;
+        b >>= 1;
+    }
+    return res;
+}
+*/
+
 
 // Block encryption/decryption
 std::array<Byte, BLOCK_SIZE> AesNaive::encrypt_block(const Block &block)

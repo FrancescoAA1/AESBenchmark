@@ -8,6 +8,7 @@
 #include <iostream>
 #include "aes.h"
 #include "aes_constants.h"
+#include "sha256.h"
 
 using Byte = std::uint8_t;
 

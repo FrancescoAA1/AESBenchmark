@@ -57,6 +57,7 @@ inline AESNaiveInt::u8 AESNaiveInt::sbox(u8 x)      { return SBOX[x]; }
 inline AESNaiveInt::u8 AESNaiveInt::inv_sbox(u8 x)  { return INV_SBOX[x]; }
 inline AESNaiveInt::u8 AESNaiveInt::xtime8(u8 x)    { return (u8)((x<<1) ^ (0x1B & (-(x>>7)))); }
 
+/*
 inline AESNaiveInt::u8 AESNaiveInt::gf_mul(u8 a, u8 b) {
     u8 res = 0;
     for (int i=0; i<8; ++i) {
@@ -67,6 +68,27 @@ inline AESNaiveInt::u8 AESNaiveInt::gf_mul(u8 a, u8 b) {
         b >>= 1;
     }
     return res;
+}
+    */
+
+inline AESNaiveInt::u8 AESNaiveInt::gf_mul(u8 a, u8 b)
+{
+    if (b == 1)
+        return a;
+    if (b == 2)
+        return xtime8(a);
+    if (b == 3)
+        return xtime8(a) ^ a;
+    if (b == 9)
+        return xtime8(xtime8(xtime8(a))) ^ a;
+    if (b == 11)
+        return xtime8(xtime8(xtime8(a))) ^ xtime8(a) ^ a;
+    if (b == 13)
+        return xtime8(xtime8(xtime8(a))) ^ xtime8(xtime8(a)) ^ a;
+    if (b == 14)
+        return xtime8(xtime8(xtime8(a))) ^ xtime8(xtime8(a)) ^ xtime8(a);
+
+    return 0;
 }
 
 inline AESNaiveInt::u32 AESNaiveInt::pack(u8 r0,u8 r1,u8 r2,u8 r3) {

@@ -59,3 +59,7 @@ Makefile
 
 #Python virtual env
 .venv/
+
+# Benchmark results (generated artifacts)
+benchmark/*.png
+benchmark/*.csv

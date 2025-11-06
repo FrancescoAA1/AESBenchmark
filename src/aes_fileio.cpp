@@ -3,6 +3,9 @@
 void AesFileIo::encrypt_file(const std::string &input_filename,
                              const std::string &output_filename,
                              IAES &aes) {
+
+    std::cout << "SHA256 of " << input_filename << ": " << tinysha256::SHA256::file_hash_hex(input_filename.c_str()) << "\n";
+    
     std::ifstream in(input_filename, std::ios::binary);
     std::ofstream out(output_filename, std::ios::binary);
 
@@ -71,4 +74,6 @@ void AesFileIo::decrypt_file(const std::string &input_filename,
 
     in.close();
     out.close();
+
+    std::cout << "SHA256 of " << output_filename << ": " << tinysha256::SHA256::file_hash_hex(output_filename.c_str()) << "\n";
 }
