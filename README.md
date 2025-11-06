@@ -44,7 +44,15 @@ Then setup WSL as default. or first time open, It will ask to create linux usern
 
 
 ----
+Setup Python on Windows
 
+navigate to root folder "aesbenchmark"
+python -m venv .venv
+.\.venv\Scripts\activate
+python.exe -m pip install --upgrade pip
+pip install matplotlib pandas
+
+----
 Setup Python on Ubuntu
 
 sudo apt install python3.12-venv
