@@ -24,8 +24,6 @@ struct Stats {
     double stddev_time_ns;
     double avg_throughput_mb_s;
     double avg_cycles_per_byte;
-    std::vector<double> outliers_low;
-    std::vector<double> outliers_high;
 
     std::string to_string(const std::string &aes_name) const {
         std::ostringstream oss;
@@ -39,33 +37,10 @@ struct Stats {
             << "  95th percentile: " << p95_time_ns << " ns\r\n"
             << "  IQR:             " << iqr_ns << " ns\r\n"
             << "  Mean:            " << mean_time_ns << " ns\r\n"
-            << "  Stddev:          " << stddev_time_ns << " ns\r\n";
-
-        // Add outliers inline to the same string
-        oss << print_outliers(outliers_low, "Low outliers");
-        oss << print_outliers(outliers_high, "High outliers");
-
-        oss << "  Avg throughput:  " << avg_throughput_mb_s << " MB/s\r\n"
+            << "  Stddev:          " << stddev_time_ns << " ns\r\n"
+            << "  Avg throughput:  " << avg_throughput_mb_s << " MB/s\r\n"
             << "  Cycles/byte:     " << avg_cycles_per_byte << "\r\n";
 
-        return oss.str();
-    }
-
-private:
-    // Helper function returning a string (not printing)
-    static std::string print_outliers(const std::vector<double>& outliers, const std::string& label) {
-        std::ostringstream oss;
-        oss << "  " << label << " (" << outliers.size() << "): ";
-        if (outliers.empty()) {
-            oss << "none\r\n";
-        } else {
-            size_t limit = std::min<size_t>(outliers.size(), 10); // limit to 10
-            for (size_t i = 0; i < limit; ++i) {
-                oss << std::fixed << std::setprecision(2) << outliers[i] << "ns ";
-            }
-            if (outliers.size() > 10) oss << "... (" << outliers.size() - 10 << " more)";
-            oss << "\r\n";
-        }
         return oss.str();
     }
 };

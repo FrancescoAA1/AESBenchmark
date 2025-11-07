@@ -123,18 +123,6 @@ Stats AESBenchmark::compute_stats(const std::vector<double>& timings) {
 
     double iqr = p75 - p25;
 
-    // Compute outlier bounds
-    double lower_fence = p25 - 3 * iqr;
-    double upper_fence = p75 + 3 * iqr;
-
-    std::vector<double> outliers_low, outliers_high;
-    for (double v : sorted_timings) {
-        if (v < lower_fence)
-            outliers_low.push_back(v);
-        else if (v > upper_fence)
-            outliers_high.push_back(v);
-    }
-
     std::vector<double> trimmed;
     for (double v : sorted_timings) {
         if (v >= p05 && v <= p95)
@@ -164,8 +152,6 @@ Stats AESBenchmark::compute_stats(const std::vector<double>& timings) {
     stats.stddev_time_ns = stddev_time;
     stats.avg_throughput_mb_s = avg_throughput_mb_s;
     stats.avg_cycles_per_byte = avg_cycles_per_byte;
-    stats.outliers_low = std::move(outliers_low);
-    stats.outliers_high = std::move(outliers_high);
 
     return stats;
 }

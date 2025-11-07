@@ -73,27 +73,7 @@ void write_csv_row(std::ofstream &out, const std::string &impl, const std::strin
         << s.mean_time_ns << ","
         << s.stddev_time_ns << ","
         << s.avg_throughput_mb_s << ","
-        << s.avg_cycles_per_byte << ",";
-
-    // Outliers: flatten as semicolon-separated lists
-    if (!s.outliers_low.empty()) {
-        for (size_t i = 0; i < s.outliers_low.size(); ++i) {
-            out << s.outliers_low[i];
-            if (i < s.outliers_low.size() - 1)
-                out << ";";
-        }
-    }
-    out << ",";  // separate low/high lists
-
-    if (!s.outliers_high.empty()) {
-        for (size_t i = 0; i < s.outliers_high.size(); ++i) {
-            out << s.outliers_high[i];
-            if (i < s.outliers_high.size() - 1)
-                out << ";";
-        }
-    }
-
-    out << "\n";
+        << s.avg_cycles_per_byte << "\n";
 }
 
 
@@ -269,8 +249,7 @@ int main()
      csv_file << "Implementation,Operation,"
          << "P05_ns,P25_ns,Median_ns,P75_ns,P95_ns,"
          << "IQR_ns,Mean_ns,StdDev_ns,"
-         << "Avg_Throughput_MB_s,Avg_Cycles_per_Byte,"
-         << "Outliers_Low_ns,Outliers_High_ns\n";
+         << "Avg_Throughput_MB_s,Avg_Cycles_per_Byte\n";
 
 
      write_csv_row(csv_file, "AES-Naive", "Full Encryption", stats_naive_enc);
@@ -295,8 +274,7 @@ int main()
      csv_file2 << "Implementation,Operation,"
          << "P05_ns,P25_ns,Median_ns,P75_ns,P95_ns,"
          << "IQR_ns,Mean_ns,StdDev_ns,"
-         << "Avg_Throughput_MB_s,Avg_Cycles_per_Byte,"
-         << "Outliers_Low_ns,Outliers_High_ns\n";
+         << "Avg_Throughput_MB_s,Avg_Cycles_per_Byte\n";
 
 
      write_csv_row(csv_file2, "AES-Naive", "Encryption", stats_naive_enc);
