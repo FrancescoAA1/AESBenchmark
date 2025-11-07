@@ -56,7 +56,7 @@ Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, s
 }
 
 Stats AESBenchmark::compute_stats(const std::vector<double>& timings) {
-    Stats stats{};  
+    Stats stats{};
 
     if (timings.empty())
         return stats;
@@ -64,41 +64,70 @@ Stats AESBenchmark::compute_stats(const std::vector<double>& timings) {
     std::vector<double> sorted_timings = timings;
     std::sort(sorted_timings.begin(), sorted_timings.end());
 
-    //Removing Outliers
     size_t n = sorted_timings.size();
-    size_t lower_index = n * 0.05;
-    size_t upper_index = n * 0.95;
-    std::vector<double> trimmed(sorted_timings.begin() + lower_index,
-                                sorted_timings.begin() + upper_index);
 
 
-    double min_time = *std::min_element(trimmed.begin(), trimmed.end());
-    double max_time = *std::max_element(trimmed.begin(), trimmed.end());
-    double avg_time = std::accumulate(trimmed.begin(), trimmed.end(), 0.0) / trimmed.size();
+    auto percentile = [&](double p) -> double {
+        double idx = p * (n - 1);
+        size_t i = static_cast<size_t>(idx);
+        double frac = idx - i;
+        if (i + 1 < n)
+            return sorted_timings[i] * (1.0 - frac) + sorted_timings[i + 1] * frac;
+        else
+            return sorted_timings[i];
+    };
 
+    double p05 = percentile(0.05);
+    double p25 = percentile(0.25);
+    double p50 = percentile(0.50);
+    double p75 = percentile(0.75);
+    double p95 = percentile(0.95);
+
+    double iqr = p75 - p25;
+
+    // Compute outlier bounds
+    double lower_fence = p25 - 3 * iqr;
+    double upper_fence = p75 + 3 * iqr;
+
+    std::vector<double> outliers_low, outliers_high;
+    for (double v : sorted_timings) {
+        if (v < lower_fence)
+            outliers_low.push_back(v);
+        else if (v > upper_fence)
+            outliers_high.push_back(v);
+    }
+
+    std::vector<double> trimmed;
+    for (double v : sorted_timings) {
+        if (v >= p05 && v <= p95)
+            trimmed.push_back(v);
+    }
+
+    double sum = std::accumulate(trimmed.begin(), trimmed.end(), 0.0);
+    double mean_time = sum / trimmed.size();
     double sq_sum = std::inner_product(trimmed.begin(), trimmed.end(), trimmed.begin(), 0.0);
-    double stddev_time = std::sqrt(sq_sum / trimmed.size() - avg_time * avg_time);
+    double stddev_time = std::sqrt(sq_sum / trimmed.size() - mean_time * mean_time);
 
     double total_data_mb = static_cast<double>(BLOCK_SIZE * trimmed.size()) / (1024 * 1024);
     double total_time_s = std::accumulate(trimmed.begin(), trimmed.end(), 0.0) / 1e9;
     double avg_throughput_mb_s = total_data_mb / total_time_s;
 
-    double median_time = (trimmed.size() % 2 == 0) ?
-                         (trimmed[trimmed.size()/2 - 1] + trimmed[trimmed.size()/2]) / 2 :
-                         trimmed[trimmed.size()/2];
-
-    double latency_ns = avg_time;
+    double latency_ns = mean_time;
     double cpu_frequency_ghz = 3.0;
     double avg_cycles_per_byte = (latency_ns * cpu_frequency_ghz) / BLOCK_SIZE;
 
-    stats.min_time_ns = min_time;
-    stats.max_time_ns = max_time;
-    stats.avg_time_ns = avg_time;
-    stats.median_time_ns = median_time;
+    stats.p05_time_ns = p05;
+    stats.p25_time_ns = p25;
+    stats.median_time_ns = p50;
+    stats.p75_time_ns = p75;
+    stats.p95_time_ns = p95;
+    stats.iqr_ns = iqr;
+    stats.mean_time_ns = mean_time;
     stats.stddev_time_ns = stddev_time;
     stats.avg_throughput_mb_s = avg_throughput_mb_s;
-    stats.latency_ns = latency_ns;
     stats.avg_cycles_per_byte = avg_cycles_per_byte;
+    stats.outliers_low = std::move(outliers_low);
+    stats.outliers_high = std::move(outliers_high);
 
     return stats;
 }
