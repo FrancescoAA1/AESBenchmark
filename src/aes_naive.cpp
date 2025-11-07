@@ -491,9 +491,9 @@ std::array<Byte, BLOCK_SIZE> AesNaive::encrypt_block(const Block &block)
     {
         sub_bytes(state);
         shift_rows(state);
-        //mix_columns(state);
+        mix_columns(state);
         //Alternatively, we can use the faster version of mix_columns
-        mix_columns_fast(state);
+        //mix_columns_fast(state);
         add_round_key(state, get_round_key(round));
     }
 

@@ -22,6 +22,7 @@
 using namespace std;
 using namespace std::filesystem;
 
+
 using Byte = std::uint8_t;
 
 
@@ -58,13 +59,41 @@ void test_aes_roundtrip(IAES &aes, const Block &plain, const Block &expected1, c
 
 void write_csv_row(std::ofstream &out, const std::string &impl, const std::string &op, const Stats &s)
 {
-    out << impl << "," 
-        << op << "," 
-        << s.avg_time_ns << ","
-        << s.min_time_ns << ","
-        << s.max_time_ns << ","
-        << s.stddev_time_ns
-        << "\n";
+    out << std::fixed << std::setprecision(4);
+
+    // Basic stats
+    out << impl << ","
+        << op << ","
+        << s.p05_time_ns << ","
+        << s.p25_time_ns << ","
+        << s.median_time_ns << ","
+        << s.p75_time_ns << ","
+        << s.p95_time_ns << ","
+        << s.iqr_ns << ","
+        << s.mean_time_ns << ","
+        << s.stddev_time_ns << ","
+        << s.avg_throughput_mb_s << ","
+        << s.avg_cycles_per_byte << ",";
+
+    // Outliers: flatten as semicolon-separated lists
+    if (!s.outliers_low.empty()) {
+        for (size_t i = 0; i < s.outliers_low.size(); ++i) {
+            out << s.outliers_low[i];
+            if (i < s.outliers_low.size() - 1)
+                out << ";";
+        }
+    }
+    out << ",";  // separate low/high lists
+
+    if (!s.outliers_high.empty()) {
+        for (size_t i = 0; i < s.outliers_high.size(); ++i) {
+            out << s.outliers_high[i];
+            if (i < s.outliers_high.size() - 1)
+                out << ";";
+        }
+    }
+
+    out << "\n";
 }
 
 
@@ -98,8 +127,8 @@ int main()
          0x13, 0xD3, 0x13, 0xFA,
          0x20, 0xE9, 0x8D, 0xBC};
 
-     const size_t iterations = 10000;
-     const size_t warmup_iterations = 1000;
+     const size_t iterations = 1000;
+     const size_t warmup_iterations = 100;
 
      // ============= BENCHMARKING ==============
 
@@ -237,7 +266,12 @@ int main()
 
      path benchmark_result = path("..") / "benchmark" / "benchmark_results.csv";
      std::ofstream csv_file(benchmark_result);
-     csv_file << "Implementation,Operation,Avg_ns,Min_ns,Max_ns,StdDev_ns\n";
+     csv_file << "Implementation,Operation,"
+         << "P05_ns,P25_ns,Median_ns,P75_ns,P95_ns,"
+         << "IQR_ns,Mean_ns,StdDev_ns,"
+         << "Avg_Throughput_MB_s,Avg_Cycles_per_Byte,"
+         << "Outliers_Low_ns,Outliers_High_ns\n";
+
 
      write_csv_row(csv_file, "AES-Naive", "Full Encryption", stats_naive_enc);
      write_csv_row(csv_file, "AES-Naive", "Full Decryption", stats_naive_dec);
@@ -258,7 +292,12 @@ int main()
 
      path benchmark_path = path("..") / "benchmark" / "benchmark_AES.csv";
      std::ofstream csv_file2(benchmark_path);
-     csv_file2 << "Implementation,Operation,Avg_ns,Min_ns,Max_ns,StdDev_ns\n";
+     csv_file2 << "Implementation,Operation,"
+         << "P05_ns,P25_ns,Median_ns,P75_ns,P95_ns,"
+         << "IQR_ns,Mean_ns,StdDev_ns,"
+         << "Avg_Throughput_MB_s,Avg_Cycles_per_Byte,"
+         << "Outliers_Low_ns,Outliers_High_ns\n";
+
 
      write_csv_row(csv_file2, "AES-Naive", "Encryption", stats_naive_enc);
      write_csv_row(csv_file2, "AES-Naive", "Decryption", stats_naive_dec);
