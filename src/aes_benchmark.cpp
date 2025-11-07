@@ -1,3 +1,35 @@
+#if defined(_WIN32)
+    #include <intrin.h>
+       #include <windows.h>
+       #include <basetsd.h>
+#elif defined(__linux__)
+    #include <x86intrin.h>
+        #include <pthread.h>
+    #include <sched.h>
+#else
+    #error "RDTSC timing OR Thread affinity not supported on this platform"
+#endif
+
+#include <iostream>
+
+
+inline void pin_thread_to_cpu0() {
+#if defined(_WIN32)
+    DWORD_PTR mask = 1;
+    if (SetThreadAffinityMask(GetCurrentThread(), mask) == 0) {
+        std::cerr << "Warning: failed to set thread affinity on Windows\n";
+    }
+#elif defined(__linux__)
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(0, &cpuset); // CPU 0
+    if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
+        std::cerr << "Warning: failed to set thread affinity on Linux/Unix\n";
+    }
+#endif
+}
+
+
 #include "aes_benchmark.h"
 #include <algorithm>
 #include <numeric>
@@ -7,8 +39,13 @@
 #include <cmath>
 #include <functional>
 
+
+
 using namespace std;
 
+inline double cycles_to_ns(uint64_t cycles, double cpu_ghz = 3.0) {
+    return static_cast<double>(cycles) / cpu_ghz; // cycles / GHz = ns
+}
 
 AESBenchmark::AESBenchmark(IAES& iaes) : aes_(iaes) {}
 
@@ -35,6 +72,8 @@ Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, s
             sink(out);
         };
 
+    pin_thread_to_cpu0();
+
     // --- Warmup phase ---
     for (size_t i = 0; i < warmup_iterations; ++i)
         operation(block);
@@ -42,12 +81,11 @@ Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, s
     // --- Benchmarking phase ---
     for (size_t i = 0; i < iterations; ++i)
     {
-        auto start = std::chrono::high_resolution_clock::now();
+        uint64_t start_cycles = __rdtsc();
         operation(block);
-        auto end = std::chrono::high_resolution_clock::now();
+        uint64_t end_cycles = __rdtsc();
 
-        double duration_ns =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        double duration_ns = cycles_to_ns(end_cycles - start_cycles, 3.0);
 
         timings.push_back(duration_ns);
     }

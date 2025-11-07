@@ -56,13 +56,14 @@ pip install matplotlib pandas
 ----
 Setup Python on Ubuntu
 
+Install Python (search how)
+navigate to root folder "aesbenchmark"
 sudo apt install python3.12-venv
 Y
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install matplotlib pandas
-sudo apt install python3-tk
 sudo apt install libbotan-3-dev
 sudo apt install pkg-config
    
