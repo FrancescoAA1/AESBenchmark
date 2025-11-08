@@ -1,4 +1,7 @@
 #include "../include/aes_botan_wrapper.h"
+
+#if HAVE_BOTAN
+
 #include <botan/aes.h>
 
 AesBotanWrapper::AesBotanWrapper(const Key& key) {
@@ -18,3 +21,25 @@ Block AesBotanWrapper::decrypt_block(const Block &in) {
     cipher->decrypt(in.data(), out.data());
     return out;
 }
+
+#else                        // Windows: dummy implementation (no Botan)
+
+#include <stdexcept>
+
+AesBotanWrapper::AesBotanWrapper(const Key& /*key*/) {
+    // Either do nothing (if you're sure you won't use this backend),
+    // or throw so you notice if it's accidentally used:
+    // throw std::runtime_error("Botan backend not available on Windows");
+}
+
+Block AesBotanWrapper::encrypt_block(const Block &in) {
+    // DANGEROUS: this does no encryption. OK only if you never call it.
+    return in;
+}
+
+Block AesBotanWrapper::decrypt_block(const Block &in) {
+    // Same here: no-op.
+    return in;
+}
+
+#endif

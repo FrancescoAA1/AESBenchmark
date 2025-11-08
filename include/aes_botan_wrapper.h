@@ -1,6 +1,12 @@
 #pragma once
-#include <botan/block_cipher.h>
+
+#include <memory>
 #include "aes.h"
+
+// Forward declaration is enough for a pointer / unique_ptr
+namespace Botan {
+    class BlockCipher;
+}
 
 class AesBotanWrapper : public IAES {
 public:
@@ -10,5 +16,7 @@ public:
     Block decrypt_block(const Block &in) override;
 
 private:
+#if HAVE_BOTAN
     std::unique_ptr<Botan::BlockCipher> cipher;
+#endif
 };

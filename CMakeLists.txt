@@ -8,41 +8,60 @@ set(CMAKE_BUILD_TYPE Release)
 include_directories(include)
 enable_testing()
 
-find_package(PkgConfig)
-pkg_check_modules(BOTAN2 REQUIRED botan-2)
+# --- Option: turn Botan backend on/off (default ON except on Windows) ---
+if (WIN32)
+    option(USE_BOTAN "Enable Botan backend (requires botan-2)" OFF)
+else()
+    option(USE_BOTAN "Enable Botan backend (requires botan-2)" ON)
+endif()
 
-include_directories(${BOTAN_INCLUDE_DIRS})
-link_directories(${BOTAN_LIBRARY_DIRS})
+# --- Try to find Botan via pkg-config when enabled ---
+set(BOTAN2_FOUND FALSE)
+if (USE_BOTAN)
+    find_package(PkgConfig)
+    if (PkgConfig_FOUND)
+        pkg_check_modules(BOTAN2 botan-2)
+        if (BOTAN2_FOUND)
+            message(STATUS "Botan2 found:")
+            message(STATUS "  include dirs: ${BOTAN2_INCLUDE_DIRS}")
+            message(STATUS "  libraries:    ${BOTAN2_LIBRARIES}")
+            message(STATUS "  cflags:       ${BOTAN2_CFLAGS_OTHER}")
+        else()
+            message(WARNING "Botan2 requested (USE_BOTAN=ON) but not found. Disabling Botan backend.")
+        endif()
+    else()
+        message(WARNING "PkgConfig not found; cannot find Botan2. Disabling Botan backend.")
+    endif()
+endif()
 
-add_executable(AES src/main.cpp src/aes_naive.cpp src/aes_ttable.cpp src/aes_aesni.cpp src/aes_benchmark.cpp src/aes_fileio.cpp src/aes_naive_int.cpp src/aes_botan_wrapper.cpp src/sha256.cpp)
+# --- Main executable ---
+add_executable(AES
+    src/main.cpp
+    src/aes_naive.cpp
+    src/aes_ttable.cpp
+    src/aes_aesni.cpp
+    src/aes_benchmark.cpp
+    src/aes_fileio.cpp
+    src/aes_naive_int.cpp
+    src/aes_botan_wrapper.cpp
+    src/sha256.cpp
+)
 
-# Compile AES intrinsics only for this file (GCC/Clang need -maes; -mpclmul is for GCM/HASH)
+# AES-NI flags just for aes_aesni.cpp (GCC/Clang)
 set_source_files_properties(src/aes_aesni.cpp PROPERTIES
     COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:GNU,Clang>:-maes;-mpclmul>"
 )
 
-target_include_directories(AES PRIVATE ${BOTAN2_INCLUDE_DIRS})
-target_link_libraries(AES PRIVATE ${BOTAN2_LIBRARIES})
-target_compile_options(AES PRIVATE ${BOTAN2_CFLAGS_OTHER})
+# --- Wire Botan into the target only if found ---
+if (BOTAN2_FOUND)
+    target_include_directories(AES PRIVATE ${BOTAN2_INCLUDE_DIRS})
+    target_link_libraries(AES PRIVATE ${BOTAN2_LIBRARIES})
+    target_compile_options(AES PRIVATE ${BOTAN2_CFLAGS_OTHER})
+    target_compile_definitions(AES PRIVATE HAVE_BOTAN=1)
+else()
+    target_compile_definitions(AES PRIVATE HAVE_BOTAN=0)
+endif()
 
-message(STATUS "Botan include dirs: ${BOTAN2_INCLUDE_DIRS}")
-message(STATUS "Botan libraries: ${BOTAN2_LIBRARIES}")
-message(STATUS "Botan cflags: ${BOTAN2_CFLAGS_OTHER}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-
-
-# cmake_minimum_required(VERSION 3.15)
-# project(AES VERSION 0.1.0 LANGUAGES C CXX)
-
-# set(CMAKE_CXX_STANDARD 17)
-# set(CMAKE_CXX_STANDARD_REQUIRED ON)
-# set(CMAKE_CXX_EXTENSIONS OFF)
-
-# include_directories(include)
-# enable_testing()
-# add_executable(AES src/main.cpp src/aes_naive.cpp src/aes_ttable.cpp src/aes_aesni.cpp src/aes_benchmark.cpp src/aes_fileio.cpp src/aes_naive_int.cpp src/sha256.cpp)
-# set_source_files_properties(src/aes_aesni.cpp PROPERTIES    
-#     COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:GNU,Clang>:-maes;-mpclmul>"
-# )
-# set_property( TARGET AES PROPERTY CMAKE_CXX_STANDARD 17)
-
+message(STATUS "USE_BOTAN: ${USE_BOTAN}")
+message(STATUS "BOTAN2_FOUND: ${BOTAN2_FOUND}")
