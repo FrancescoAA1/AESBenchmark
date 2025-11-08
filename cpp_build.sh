@@ -22,7 +22,7 @@
 #   --clean                   Remove build dir before configuring
 #   --init-submodules         git submodule sync/update --init --recursive
 #   -h|--help                 Show help
-set -euo pipefail
+#set -euo pipefail
 
 # ---------- defaults ----------
 SRC_DIR="$(pwd)"
