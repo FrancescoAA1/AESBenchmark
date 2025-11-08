@@ -72,12 +72,24 @@ install_toolchain() {
   require_apt
   export DEBIAN_FRONTEND=noninteractive
   sudo apt-get update -y
-  sudo apt-get install -y --no-install-recommends \
-    build-essential g++ cmake ninja-build pkg-config \
-    ca-certificates git \
-    libbotan-2-dev \   # <- Botan development package added here
-    $EXTRA_APT
+
+  # Base packages
+  local pkgs=(
+    build-essential g++ cmake ninja-build pkg-config
+    ca-certificates git
+    libbotan-2-dev
+  )
+
+  # Add extra packages if user gave --extra-apt "..."
+  if [[ -n "$EXTRA_APT" ]]; then
+    # shellcheck disable=SC2206
+    extra_pkgs=($EXTRA_APT)
+    pkgs+=("${extra_pkgs[@]}")
+  fi
+
+  sudo apt-get install -y --no-install-recommends "${pkgs[@]}"
 }
+
 
 install_cmake_ubuntu() {
   require_apt
@@ -102,7 +114,7 @@ install_cmake_snap() {
   if ! command -v snap >/dev/null 2>&1; then
     err "snapd is not available on this system."
     exit 1
-  fi>
+  fi
   sudo snap install cmake --classic
 }
 

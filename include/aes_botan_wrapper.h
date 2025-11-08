@@ -3,10 +3,15 @@
 #include <memory>
 #include "aes.h"
 
+#if HAVE_BOTAN
+  #include <botan/block_cipher.h>
+#else
+
 // Forward declaration is enough for a pointer / unique_ptr
 namespace Botan {
     class BlockCipher;
 }
+#endif
 
 class AesBotanWrapper : public IAES {
 public:
