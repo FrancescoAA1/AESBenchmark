@@ -5,8 +5,6 @@ we made two scripts to help with the installation.
 
 A. get python enviroment running,
 	
-	pyenv_setup.sh
-	chmod +x pyenv_setup.sh
 	source pyenv_setup.sh --activate
 	
 	(if allready installed)
@@ -14,16 +12,12 @@ A. get python enviroment running,
 
 B. get the c++ cmake working
 	
-	cpp_build.sh
-	chmod +x cpp_build.sh
 	./cpp_build.sh --install-deps --install-cmake-latest --source-dir .
 
 C. Navigate to ./build folder and run AES 
 	
 	(important to do it from build folder or it can't find the plot_benchmark.py file) 
 	./AES
-
-
 
 Project with three versions of AES and their respective performance profiles.
 
