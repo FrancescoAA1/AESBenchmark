@@ -4,8 +4,9 @@ import numpy as np
 from pathlib import Path
 
 # ---------------- Load CSVs ----------------
-aes_file = Path("..") / "benchmark" / "benchmark_AES.csv"
-steps_file = Path("..") / "benchmark" / "benchmark_results.csv"
+aes_file = Path("..") / "benchmark" / "benchmark_results.csv"
+steps_file = Path("..") / "benchmark" / "benchmark_AES.csv"
+
 
 df_aes = pd.read_csv(aes_file)
 df_steps = pd.read_csv(steps_file)

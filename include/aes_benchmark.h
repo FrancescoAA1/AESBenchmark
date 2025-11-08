@@ -45,15 +45,17 @@ struct Stats {
     }
 };
 
-enum class AESOperation {
+// aes_benchmark.h
 
-    //Common operations
+#pragma once
+#include <string>
+
+enum class AESOperation {
+    // Common operations
     EncryptBlock,
     DecryptBlock,
 
-    //AES Naive operations
-
-    //Encrytpion
+    // AES Naive operations
     SubBytes,
     ShiftRows,
     MixColumns,
@@ -61,22 +63,51 @@ enum class AESOperation {
     AddRoundKey,
     KeyExpansionNaive,
 
-    //Decryption
     InvSubBytes,
     InvShiftRows,
     InvMixColumns,
 
-    //Helpers
+    // Helpers
     GFMul,
 
-    //AES TTable operations
+    // AES TTable operations
     InitTables,
     KeyExpansionTTable,
 
-    //AES-NI operations
+    // AES-NI operations
     KeyExpansionNI,
     KeyDecryptNI,
 };
+
+// Helper function to convert AESOperation to string
+inline std::string to_string(AESOperation op) {
+    switch(op) {
+        case AESOperation::EncryptBlock:       return "EncryptBlock";
+        case AESOperation::DecryptBlock:       return "DecryptBlock";
+
+        case AESOperation::SubBytes:           return "SubBytes";
+        case AESOperation::ShiftRows:          return "ShiftRows";
+        case AESOperation::MixColumns:         return "MixColumns";
+        case AESOperation::MixColumnsFast:     return "MixColumnsFast";
+        case AESOperation::AddRoundKey:        return "AddRoundKey";
+        case AESOperation::KeyExpansionNaive:  return "KeyExpansionNaive";
+
+        case AESOperation::InvSubBytes:        return "InvSubBytes";
+        case AESOperation::InvShiftRows:       return "InvShiftRows";
+        case AESOperation::InvMixColumns:      return "InvMixColumns";
+
+        case AESOperation::GFMul:              return "GFMul";
+
+        case AESOperation::InitTables:         return "InitTables";
+        case AESOperation::KeyExpansionTTable: return "KeyExpansionTTable";
+
+        case AESOperation::KeyExpansionNI:     return "KeyExpansionNI";
+        case AESOperation::KeyDecryptNI:       return "KeyDecryptNI";
+
+        default: return "UnknownOp";
+    }
+}
+
 
 class AESBenchmark
 {

@@ -93,54 +93,57 @@ Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, s
     return compute_stats(timings);
 }
 
-Stats AESBenchmark::compute_stats(const std::vector<double>& timings) {
+Stats AESBenchmark::compute_stats(const std::vector<double>& timings)
+{
     Stats stats{};
+    if (timings.empty()) return stats;
 
-    if (timings.empty())
-        return stats;
+    // copy + sort
+    std::vector<double> sorted = timings;
+    std::sort(sorted.begin(), sorted.end());
+    const size_t n = sorted.size();
 
-    std::vector<double> sorted_timings = timings;
-    std::sort(sorted_timings.begin(), sorted_timings.end());
-
-    size_t n = sorted_timings.size();
-
-
+    // Helper: percentile with linear interpolation like numpy.percentile(..., interpolation='linear')
     auto percentile = [&](double p) -> double {
-        double idx = p * (n - 1);
-        size_t i = static_cast<size_t>(idx);
-        double frac = idx - i;
-        if (i + 1 < n)
-            return sorted_timings[i] * (1.0 - frac) + sorted_timings[i + 1] * frac;
-        else
-            return sorted_timings[i];
+        if (n == 1) return sorted[0];
+        double idx = p * (static_cast<double>(n - 1));
+        size_t lo = static_cast<size_t>(std::floor(idx));
+        size_t hi = static_cast<size_t>(std::ceil(idx));
+        double frac = idx - static_cast<double>(lo);
+        if (hi >= n) hi = n - 1;
+        if (lo == hi) return sorted[lo];
+        return sorted[lo] * (1.0 - frac) + sorted[hi] * frac;
     };
 
-    double p05 = percentile(0.05);
-    double p25 = percentile(0.25);
-    double p50 = percentile(0.50);
-    double p75 = percentile(0.75);
-    double p95 = percentile(0.95);
+    // Percentiles (full data)
+    const double p05 = percentile(0.05);
+    const double p25 = percentile(0.25);
+    const double p50 = percentile(0.50);
+    const double p75 = percentile(0.75);
+    const double p95 = percentile(0.95);
+    const double iqr  = p75 - p25;
 
-    double iqr = p75 - p25;
+    // Full-data mean & stddev (population, ddof = 0) — matches numpy default
+    double sum_full = std::accumulate(sorted.begin(), sorted.end(), 0.0);
+    double mean_full = sum_full / static_cast<double>(n);
 
-    std::vector<double> trimmed;
-    for (double v : sorted_timings) {
-        if (v >= p05 && v <= p95)
-            trimmed.push_back(v);
-    }
+    double sq_sum_full = std::inner_product(sorted.begin(), sorted.end(), sorted.begin(), 0.0);
+    double var_full = sq_sum_full / static_cast<double>(n) - mean_full * mean_full;
+    double stddev_full = (var_full > 0.0) ? std::sqrt(var_full) : 0.0;
 
-    double sum = std::accumulate(trimmed.begin(), trimmed.end(), 0.0);
-    double mean_time = sum / trimmed.size();
-    double sq_sum = std::inner_product(trimmed.begin(), trimmed.end(), trimmed.begin(), 0.0);
-    double stddev_time = std::sqrt(sq_sum / trimmed.size() - mean_time * mean_time);
+    // Throughput: use full-data total time (makes sense for MB/s)
+    double total_bytes = static_cast<double>(BLOCK_SIZE) * static_cast<double>(n);
+    double total_time_s = sum_full / 1e9; // timings in ns -> seconds
+    double avg_throughput_mb_s = (total_time_s > 0.0) ? (total_bytes / (1024.0 * 1024.0)) / total_time_s : 0.0;
 
-    double total_data_mb = static_cast<double>(BLOCK_SIZE * trimmed.size()) / (1024 * 1024);
-    double total_time_s = std::accumulate(trimmed.begin(), trimmed.end(), 0.0) / 1e9;
-    double avg_throughput_mb_s = total_data_mb / total_time_s;
+    // Latency: use full mean as canonical "latency" measure (consistent with numpy mean)
+    double latency_ns = mean_full;
 
-    double latency_ns = mean_time;
-    double cpu_frequency_ghz = 3.0;
-    double avg_cycles_per_byte = (latency_ns * cpu_frequency_ghz) / BLOCK_SIZE;
+    // Cycles/byte: require CPU freq (GHz). Default 3.0 GHz; change if you measured/know it.
+    double cpu_frequency_ghz = 3.0; // <-- change this to measured CPU freq if you want correct cycles.
+    double avg_cycles_per_byte = (latency_ns * cpu_frequency_ghz) / static_cast<double>(BLOCK_SIZE);
+
+
 
     stats.p05_time_ns = p05;
     stats.p25_time_ns = p25;
@@ -148,8 +151,12 @@ Stats AESBenchmark::compute_stats(const std::vector<double>& timings) {
     stats.p75_time_ns = p75;
     stats.p95_time_ns = p95;
     stats.iqr_ns = iqr;
-    stats.mean_time_ns = mean_time;
-    stats.stddev_time_ns = stddev_time;
+
+    stats.mean_time_ns = mean_full;
+    stats.stddev_time_ns = stddev_full;
+
+
+
     stats.avg_throughput_mb_s = avg_throughput_mb_s;
     stats.avg_cycles_per_byte = avg_cycles_per_byte;
 
@@ -282,11 +289,14 @@ Stats AESBenchmark::benchmark_step(AESOperation step, const Block &block, size_t
     // BENCHMARKING PHASE
     for (size_t i = 0; i < iterations; ++i)
     {
-        auto start = std::chrono::high_resolution_clock::now();
-        op_func(st);
-        auto end = std::chrono::high_resolution_clock::now();
 
-        timings.push_back(std::chrono::duration<double, std::nano>(end - start).count());
+        uint64_t start_cycles = __rdtsc();
+        op_func(st);
+        uint64_t end_cycles = __rdtsc();
+
+        double duration_ns = cycles_to_ns(end_cycles - start_cycles, 3.0);
+
+        timings.push_back(duration_ns);
     }
     return compute_stats(timings);
 }
