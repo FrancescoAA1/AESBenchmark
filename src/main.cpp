@@ -13,7 +13,7 @@
 #include <aes_fileio.h>
 #include <aes_benchmark.h>
 #include <aes_naive_int.h>
-//#include <aes_botan_wrapper.h>
+#include <aes_botan_wrapper.h>
 
 #include "aes_constants.h"
 
@@ -109,6 +109,23 @@ void test_aes_roundtrip(IAES &aes, const Block &plain, const Block &expected1, c
     std::cout << "Decrypt 2: " << are_equal(pt2, plain)  << "\n";
 }
 
+void encrypt_decrypt_file(AesFileIo &file_io,
+                          const std::filesystem::path &input_file,
+                          const std::filesystem::path &encrypted_file,
+                          const std::filesystem::path &decrypted_file,
+                          IAES &aes,
+                          const std::string &name)
+{
+    std::cout << "Encrypting with " << name << "...\n";
+    file_io.encrypt_file(input_file.string(), encrypted_file.string(), aes);
+
+    std::cout << "Decrypting with " << name << "...\n";
+    file_io.decrypt_file(encrypted_file.string(), decrypted_file.string(), aes);
+
+    std::cout << "----------------------------------------\n";
+}
+
+
 int main()
 {
     // =========== SETUP ============
@@ -126,14 +143,33 @@ int main()
     AesTTable aes_ttable(key);
     AesAESNI aes_ni(key);
     AESNaiveInt aes_int(key);
+    AesBotanWrapper aes_botan(key);
 
     // === Round-trip correctness tests ===
     test_aes_roundtrip(aes_naive, block, block1, block2);
     test_aes_roundtrip(aes_ttable, block, block1, block2);
     test_aes_roundtrip(aes_ni, block, block1, block2);
     test_aes_roundtrip(aes_int, block, block1, block2);
+    test_aes_roundtrip(aes_botan, block, block1, block2);
+
+    // ============= FILE ENCRYPTION/DECRYPTION ==============
+    path input_file = path("..") / "file" / "input.jpg";
+    path encrypted_file = path("..") / "file" / "output_encrypted.jpg";
+    path decrypted_file = path("..") / "file" / "output_decrypted.jpg";
+
+    AesFileIo file_io;
+
+    encrypt_decrypt_file(file_io, input_file, encrypted_file, decrypted_file, aes_naive, "AES-Naive");
+    encrypt_decrypt_file(file_io, input_file, encrypted_file, decrypted_file, aes_ttable, "AES-TTable");
+    encrypt_decrypt_file(file_io, input_file, encrypted_file, decrypted_file, aes_ni, "AES-NI");
+    encrypt_decrypt_file(file_io, input_file, encrypted_file, decrypted_file, aes_int, "AES-Naive-Int");
+    encrypt_decrypt_file(file_io, input_file, encrypted_file, decrypted_file, aes_botan, "AES-Botan");
 
     // ============= BENCHMARK FULL AES ==============
+
+    std::filesystem::path benchmark_dir = "../benchmark";
+    std::filesystem::create_directories(benchmark_dir);
+
     std::ofstream csv("../benchmark/benchmark_results.csv");
     csv << "Implementation,Operation,P05_ns,P25_ns,Median_ns,P75_ns,P95_ns,IQR_ns,Mean_ns,StdDev_ns,Avg_Throughput_MB_s,Avg_Cycles_per_Byte\n";
 
@@ -141,6 +177,7 @@ int main()
     benchmark_aes_to_csv("AES-TTable", aes_ttable, block, iterations, warmup, csv);
     benchmark_aes_to_csv("AES-NI", aes_ni, block, iterations, warmup, csv);
     benchmark_aes_to_csv("AES-Naive-Int", aes_int, block, iterations, warmup, csv);
+    benchmark_aes_to_csv("AES-Botan", aes_botan, block, iterations, warmup, csv);
 
     csv.close();
 
@@ -172,19 +209,6 @@ int main()
     path py_script = path("..") / "src" / "plot_benchmark.py";
     string command = "python " + py_script.string();
     system(command.c_str());
-
-    // ============= FILE ENCRYPTION/DECRYPTION ==============
-    path input_file = path("..") / "file" / "input.jpg";
-    path encrypted_file = path("..") / "file" / "output_encrypted.jpg";
-    path decrypted_file = path("..") / "file" / "output_decrypted.jpg";
-
-    AesFileIo file_io;
-
-    std::cout << "Encrypting with AES-Naive...\n";
-    file_io.encrypt_file(input_file.string(), encrypted_file.string(), aes_naive);
-
-    std::cout << "Decrypting with AES-Naive...\n";
-    file_io.decrypt_file(encrypted_file.string(), decrypted_file.string(), aes_naive);
 
     return 0;
 }

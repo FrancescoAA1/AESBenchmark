@@ -21,7 +21,7 @@ def get_median_error(row):
     return med, med - p05, p95 - med
 
 # ---------------- 1. AES Implementations: Encryption/Decryption ----------------
-implementations = ['AES-Naive', 'AES-TTable', 'AES-NI']
+implementations = ['AES-Naive', 'AES-TTable', 'AES-NI', 'AES-Botan']
 operations = ['Encryption', 'Decryption']
 
 labels, medians, err_low, err_high = [], [], [], []
