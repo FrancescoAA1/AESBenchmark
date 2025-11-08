@@ -14,7 +14,6 @@
 #include <aes_benchmark.h>
 #include <aes_naive_int.h>
 #include <aes_botan_wrapper.h>
-
 #include "aes_constants.h"
 
 using namespace std;

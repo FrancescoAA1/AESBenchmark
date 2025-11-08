@@ -18,9 +18,13 @@ using Key = std::array<Byte, BLOCK_SIZE>;
 using ExpandedKey = std::array<Word, EXPANDED_KEY_WORDS>;
 using Block = std::array<Byte, BLOCK_SIZE>;
 
+// AesNaive is a straightforward implementation of AES-128 without optimizations
+//following the Design of Rijndael
+
 class AesNaive : public IAES
 {
 
+    //Allowing only AESBenchmark to call private member functions for benchmarking purposes
     friend class AESBenchmark;
     
 public:
@@ -72,7 +76,7 @@ private:
     std::array<Byte, BLOCK_SIZE> state_to_bytes(const State &state);
 
     // Used to perform multiplication in GF(2^8) in MixColumns and InvMixColumns
-    // Can be implemented as an inline function //REFACTOR
+    // Can be implemented as an inline function
     static Byte GF_mul(Byte a, Byte b);
     static Byte Xtime(Byte a);
 

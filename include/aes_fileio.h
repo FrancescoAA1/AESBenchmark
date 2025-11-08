@@ -12,6 +12,10 @@
 
 using Byte = std::uint8_t;
 
+// File encryption/decryption utility using AES implementations
+//Thanks to IAES, its methods can be called by all AES algorithms
+//Also provides functions for benchmarking and logging
+
 class AesFileIo {
 public:
     AesFileIo() = default;

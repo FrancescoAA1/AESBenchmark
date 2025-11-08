@@ -1,6 +1,3 @@
-// NOTE: Given the similarity of the AES and AES-TTable classes, we will soon create a common base class to avoid code duplication
-
-// aes_ttable.h
 #pragma once
 #include <cstdint>
 #include <array>
@@ -22,7 +19,8 @@ using Block = std::array<Byte, BLOCK_SIZE>; // Need to internally convert each b
 
 class AesTTable : public IAES
 {
-        friend class AESBenchmark;
+    // Allowing only AESBenchmark to call private member functions for benchmarking purposes
+    friend class AESBenchmark;
         
 public:
     explicit AesTTable(const Key &key);
@@ -54,28 +52,8 @@ private:
     RoundKeys key_expansion(const Key &key);
 
     // Derive decryption keys from encryption keys
-    // REPLACE this line "RoundKeys AesTTable::decryption_keys(const RoundKeys &enc_keys);"
-       RoundKeys decryption_keys(const RoundKeys &enc_keys); /// update
+       RoundKeys decryption_keys(const RoundKeys &enc_keys);
     // Helpers
-
-    static inline Byte xtime(Byte a)
-    {
-        return static_cast<Byte>((a << 1) ^ ((a & 0x80u) ? 0x1Bu : 0x00u));
-    }
-
-    static inline Byte gfmul(Byte a, Byte b)
-    {
-        Byte res = 0;
-        while (b)
-        {
-            if (b & 1u)
-                res = static_cast<Byte>(res ^ a);
-            a = xtime(a);
-            b >>= 1;
-        }
-
-        return res;
-    }
 
     // Used for block to words and words to block conversions in encrypt_block and decrypt_block
     // since we work with 4 uint32_t words internally

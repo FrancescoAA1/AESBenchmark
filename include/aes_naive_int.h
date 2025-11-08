@@ -1,10 +1,15 @@
 #pragma once
 #include <array>
 #include <cstdint>
-#include "aes.h" // brings IAES, Byte, Block, Key, constants
 
-// Naive integer (table-free except S-Box) AES-128 that implements IAES.
+#include "aes.h"
+
+// Naive integer (table-free except S-Box) AES-128 that implements IAES
+// This implementation uses 32-bit words for the state and key schedule
+
 class AESNaiveInt final : public IAES {
+
+    //Allowing only AESBenchmark to call private member functions for benchmarking purposes
     friend class AESBenchmark;
 public:
     explicit AESNaiveInt(const Key& key);
@@ -17,16 +22,18 @@ private:
     using u8  = std::uint8_t;
     using u32 = std::uint32_t;
 
-    // ---- Round keys (11 × 4 words for AES-128) ----
+    //Round keys (11 × 4 words for AES-128)
     using RoundKey4x32 = std::array<u32, 4>;
     std::array<RoundKey4x32, 11> rk_{};
 
-    // ---- Helpers ----
+    //Helpers
     static inline u8 sbox(u8 x);
     static inline u8 inv_sbox(u8 x);
     static inline u8 xtime8(u8 x);
     static inline u8 gf_mul(u8 a, u8 b);
 
+    // Packing and unpacking bytes to/from words
+    // According to big-endian where byte0 is MSB and byte3 is LSB
     static inline u32 pack(u8 r0,u8 r1,u8 r2,u8 r3);
     static inline u8  b0(u32 w);
     static inline u8  b1(u32 w);
@@ -50,11 +57,11 @@ private:
     static RoundKey4x32 make_roundkey_from_words(u32 w0,u32 w1,u32 w2,u32 w3);
     void expand_key_128(const u8 key[16]);
 
-    // block ↔ words (column-major, big-endian per word to match AES spec)
+    // block to words converter
     static std::array<u32,4> bytes_to_words_be(const u8 in[16]);
     static void words_to_bytes_be(const std::array<u32,4>& state, u8 out[16]);
 
-    // core encrypt/decrypt operating on word state
+    //core encrypt/decrypt operating on word state
     void encrypt_words(std::array<u32,4>& S) const;
     void decrypt_words(std::array<u32,4>& S) const;
 };

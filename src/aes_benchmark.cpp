@@ -38,6 +38,7 @@ inline void pin_thread_to_cpu0() {
 #include <chrono>
 #include <cmath>
 #include <functional>
+#include <thread>
 
 
 
@@ -45,6 +46,22 @@ using namespace std;
 
 inline double cycles_to_ns(uint64_t cycles, double cpu_ghz = 3.0) {
     return static_cast<double>(cycles) / cpu_ghz; // cycles / GHz = ns
+}
+
+static double get_freq_cpu()
+{
+    using namespace std::chrono;
+    uint64_t start = __rdtsc();
+    auto t1 = high_resolution_clock::now();
+
+    // Sleep a bit to measure frequency reliably
+    std::this_thread::sleep_for(milliseconds(200));
+
+    uint64_t end = __rdtsc();
+    auto t2 = high_resolution_clock::now();
+    double elapsed_s = duration<double>(t2 - t1).count();
+
+    return (end - start) / (elapsed_s * 1e9);
 }
 
 AESBenchmark::AESBenchmark(IAES& iaes) : aes_(iaes) {}
@@ -78,6 +95,8 @@ Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, s
     for (size_t i = 0; i < warmup_iterations; ++i)
         operation(block);
 
+    double freq = get_freq_cpu();
+
     // --- Benchmarking phase ---
     for (size_t i = 0; i < iterations; ++i)
     {
@@ -85,7 +104,7 @@ Stats AESBenchmark::benchmark_algorithm(const Block& block, size_t iterations, s
         operation(block);
         uint64_t end_cycles = __rdtsc();
 
-        double duration_ns = cycles_to_ns(end_cycles - start_cycles, 3.0);
+        double duration_ns = cycles_to_ns(end_cycles - start_cycles, freq);
 
         timings.push_back(duration_ns);
     }
@@ -140,7 +159,7 @@ Stats AESBenchmark::compute_stats(const std::vector<double>& timings)
     double latency_ns = mean_full;
 
     // Cycles/byte: require CPU freq (GHz). Default 3.0 GHz; change if you measured/know it.
-    double cpu_frequency_ghz = 3.0; // <-- change this to measured CPU freq if you want correct cycles.
+    double cpu_frequency_ghz = get_freq_cpu(); // <-- change this to measured CPU freq if you want correct cycles.
     double avg_cycles_per_byte = (latency_ns * cpu_frequency_ghz) / static_cast<double>(BLOCK_SIZE);
 
 

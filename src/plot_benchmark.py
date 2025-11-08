@@ -141,4 +141,3 @@ ax3.grid(axis='y', linestyle='--', alpha=0.5)
 plt.tight_layout()
 fig3.savefig(Path("..") / "benchmark" / "aes_keyexp_comparison.png", dpi=200)
 
-plt.show()

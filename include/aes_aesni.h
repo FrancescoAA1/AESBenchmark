@@ -14,38 +14,44 @@ using Key = std::array<Byte, BLOCK_SIZE>;
 using ExpandedKey = std::array<Word, EXPANDED_KEY_WORDS>;
 using Block = std::array<Byte, BLOCK_SIZE>;
 
+// Hardware-accelerated AES implementation that requires CPU with AES-NI support
+
 class AesAESNI : public IAES
 {
-    friend class AESBenchmark;
+    // Allow internal access for micro-benchmarking
+    friend class AESBenchmark;  
+    
 public:
+    // Initialize with 128-bit key and expand using AESKEYGENASSIST
     explicit AesAESNI(const Key &key);
 
-    // Matches AesNaive block interface
-    // Encrypt exactly one 16-byte block (AES-128, 10 rounds)
     Block encrypt_block(const Block &block);
-    // Decrypt one 16-byte block (AES-128, 10 rounds)
     Block decrypt_block(const Block &block);
 
-    // Returns true if the running CPU supports AES-NI (CPUID ECX bit 25).
+    //We have to check CPUID for AES-NI support before using this implementation
     static bool cpu_has_aesni();
 
 private:
-    // AES-NI round keys
+
+    // Stores round keys as 128-bit XMM registers for direct use in instructions
     struct AES128KeySchedule {
-        __m128i round[11]; // 11 round keys
+        __m128i round[11]; // 11 round keys (as usual for aes128)
     };
 
+    // Encryption round keys
     AES128KeySchedule enc_keys_;
-    AES128KeySchedule dec_keys_;
+     // Decryption round keys
+    AES128KeySchedule dec_keys_; 
+    Key key_;
 
-    Key key_; // original key for reference
-
-    // AES-NI helpers
     void expand_key(const Key &key, AES128KeySchedule &ks);
-    // Build decryption round keys from an existing encryption key schedule.
+    
+    // Generate decryption keys from encryption schedule
     void expand_key_decrypt(const AES128KeySchedule &enc, AES128KeySchedule &dec);
 
-    // Conversion helpers to match AesNaive interface
+    // Data conversion between C++ array types and XMM registers
+    // Load block to XMM
     static __m128i block_to_m128i(const Block &block);
+    // Store XMM to block
     static Block m128i_to_block(__m128i reg);
 };

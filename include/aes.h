@@ -5,6 +5,9 @@
 
 #include "aes_constants.h"
 
+// aes.h provides common type aliases and the abstract base class IAES, 
+//which defines the interface for all AES implementations.
+
 // Aliases for clarity
 using Byte = std::uint8_t;
 using Word = std::array<Byte, N_ROWS>;
@@ -19,11 +22,16 @@ class IAES
 
     virtual ~IAES() = default;
 
+    //Virtual member functions: to be implemented by the classes who derive IAES
+    //Represent the common public interface
+    // Encrypts a single 16-byte block
     virtual Block encrypt_block(const Block& block) = 0;
+    // Decrypts a single 16-byte block
     virtual Block decrypt_block(const Block& block) = 0;
 
     protected:
 
+    //Used in MixColumns (AesNaive, AesNaiveInt, AesTtable) for Galois Field multiplication 
     static inline Byte xtime(Byte a) {
         return static_cast<Byte>((a << 1) ^ ((a & 0x80u) ? 0x1Bu : 0x00u));
     }
