@@ -8,7 +8,7 @@
 #   ./cpp_build.sh --run app            # run ./build/app after build (if it exists)
 #
 # Flags:
-#   --install-deps            Install toolchain via apt (build-essential, ninja, pkg-config)
+#   --install-deps            Install toolchain via apt (build-essential, ninja, pkg-config, botan, etc.)
 #   --install-cmake           Ensure cmake is installed from Ubuntu repos (default behavior if missing)
 #   --install-cmake-latest    Install newest cmake from Kitware APT repo
 #   --install-cmake-snap      Install cmake via snap (fallback option)
@@ -74,7 +74,9 @@ install_toolchain() {
   sudo apt-get update -y
   sudo apt-get install -y --no-install-recommends \
     build-essential g++ cmake ninja-build pkg-config \
-    ca-certificates git $EXTRA_APT
+    ca-certificates git \
+    libbotan-2-dev \   # <- Botan development package added here
+    $EXTRA_APT
 }
 
 install_cmake_ubuntu() {
@@ -100,7 +102,7 @@ install_cmake_snap() {
   if ! command -v snap >/dev/null 2>&1; then
     err "snapd is not available on this system."
     exit 1
-  fi
+  fi>
   sudo snap install cmake --classic
 }
 
@@ -109,7 +111,7 @@ install_cmake_snap() {
 [[ -f "$SRC_DIR/CMakeLists.txt" ]] || { err "No CMakeLists.txt in $SRC_DIR"; exit 1; }
 
 if [[ $INSTALL_DEPS -eq 1 ]]; then
-  log "Installing C/C++ toolchain and (Ubuntu) CMake…"
+  log "Installing C/C++ toolchain, CMake, and Botan (Ubuntu/Debian)…"
   install_toolchain
 fi
 
