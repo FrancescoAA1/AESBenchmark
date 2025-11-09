@@ -5,6 +5,20 @@
 #include <ctime>
 #include<thread>
 
+#if defined(_WIN32)
+    #include <intrin.h>
+       #include <windows.h>
+       #include <basetsd.h>
+#elif defined(__linux__)
+    #include <x86intrin.h>
+        #include <pthread.h>
+    #include <sched.h>
+#else
+    #error "RDTSC timing OR Thread affinity not supported on this platform"
+#endif
+
+#include <iostream>
+
 static double get_cpu_frequency_ghz()
 {
     // Measure CPU frequency dynamically (simple calibration)

@@ -130,7 +130,7 @@ int main()
     Block block2 = {0xF7, 0x95, 0xBD, 0x4A, 0x52, 0xE2, 0x9E, 0xD7, 0x13, 0xD3, 0x13, 0xFA, 0x20, 0xE9, 0x8D, 0xBC};
 
     const size_t iterations = 100000;
-    const size_t warmup = 1000;
+    const size_t warmup = 10000;
 
     // ============= AES INSTANCES ==============
     AesNaive aes_naive(key);

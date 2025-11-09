@@ -123,7 +123,7 @@ private:
 
     // Statistical analysis of timing data 
     //Python is used in this project only data visualization
-    Stats compute_stats(const std::vector<double> &timings);
+    Stats compute_stats(const std::vector<double> &timings, double cpu_freq);
 
     // Runs the benchmark on the provided block for a given number of iterations and warmup iterations
     // thanks to the interface the function works for both AesNaive and AesTTable and Aes-NI implementations
