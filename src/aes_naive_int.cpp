@@ -3,7 +3,6 @@
 
 namespace { // file-scope tables use a public type (not AESNaiveInt::u8)
 
-// Use a file-local public type, not the class’s private alias.
 using u8_file = std::uint8_t;
 
 // ===================== S-box / Inv S-box / Rcon =====================
@@ -57,19 +56,6 @@ inline AESNaiveInt::u8 AESNaiveInt::sbox(u8 x)      { return SBOX[x]; }
 inline AESNaiveInt::u8 AESNaiveInt::inv_sbox(u8 x)  { return INV_SBOX[x]; }
 inline AESNaiveInt::u8 AESNaiveInt::xtime8(u8 x)    { return (u8)((x<<1) ^ (0x1B & (-(x>>7)))); }
 
-/*
-inline AESNaiveInt::u8 AESNaiveInt::gf_mul(u8 a, u8 b) {
-    u8 res = 0;
-    for (int i=0; i<8; ++i) {
-        if (b & 1) res ^= a;
-        u8 hi = a & 0x80;
-        a <<= 1;
-        if (hi) a ^= 0x1B;
-        b >>= 1;
-    }
-    return res;
-}
-    */
 
 inline AESNaiveInt::u8 AESNaiveInt::gf_mul(u8 a, u8 b)
 {

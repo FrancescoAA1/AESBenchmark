@@ -1,12 +1,23 @@
+
+// Provides reference implementation using established crypto library
 #include "../include/aes_botan_wrapper.h"
 
+// Conditional compilation based on Botan availability
 #if HAVE_BOTAN
 
 #include <botan/aes.h>
 
+
 AesBotanWrapper::AesBotanWrapper(const Key& key) {
+
+    // Create AES-128 cipher instance using Botan's factory method
+    // Botan automatically selects optimal implementation
     cipher = Botan::BlockCipher::create("AES-128");
+    
+    // Convert key from std::array to std::vector for Botan interface
     std::vector<uint8_t> key_vec(key.begin(), key.end());
+    
+    // Initialize cipher with the 128-bit key
     cipher->set_key(key_vec);
 }
 
@@ -22,23 +33,21 @@ Block AesBotanWrapper::decrypt_block(const Block &in) {
     return out;
 }
 
-#else                        // Windows: dummy implementation (no Botan)
+#else 
+
+// This allows the project to compile without Botan dependency
+//since we did not provide an installation shell for Windows
 
 #include <stdexcept>
 
 AesBotanWrapper::AesBotanWrapper(const Key& /*key*/) {
-    // Either do nothing (if you're sure you won't use this backend),
-    // or throw so you notice if it's accidentally used:
-    // throw std::runtime_error("Botan backend not available on Windows");
 }
 
 Block AesBotanWrapper::encrypt_block(const Block &in) {
-    // DANGEROUS: this does no encryption. OK only if you never call it.
     return in;
 }
 
 Block AesBotanWrapper::decrypt_block(const Block &in) {
-    // Same here: no-op.
     return in;
 }
 

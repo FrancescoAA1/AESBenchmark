@@ -190,7 +190,6 @@ RoundKeys AesTTable::key_expansion(const Key &key)
 
 // Helpers
 
-
 // Convert 16-byte block to 4 uint32_t words
 Bit32Word AesTTable::block_to_words(const Block &block)
 {

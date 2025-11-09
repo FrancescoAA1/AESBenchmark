@@ -461,20 +461,6 @@ Byte AesNaive::GF_mul(Byte a, Byte b)
 
     return 0;
 }
-/*
-Byte AesNaive::GF_mul(Byte a, Byte b)
-{
-    Byte res = 0;
-    for (int i=0; i<8; ++i) {
-        if (b & 1) res ^= a;
-        Byte hi = a & 0x80;
-        a <<= 1;
-        if (hi) a ^= 0x1B;
-        b >>= 1;
-    }
-    return res;
-}
-*/
 
 
 // Block encryption/decryption

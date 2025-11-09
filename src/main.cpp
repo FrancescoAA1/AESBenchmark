@@ -21,6 +21,9 @@ using namespace std::filesystem;
 
 using Byte = std::uint8_t;
 
+//Helper Functions
+
+//Prints a block
 inline std::string block_to_string(const Block &b) {
     std::ostringstream oss;
     for (auto byte : b)
@@ -28,12 +31,14 @@ inline std::string block_to_string(const Block &b) {
     return oss.str();
 }
 
+//Checks if two blocks are equal (used for testing purposes)
 std::string are_equal(const Block &block1, const Block &block2)
 {
     return (block1 == block2) ? "Success: " + block_to_string(block1) + "\r\n"
                               : "Fail: " + block_to_string(block1);
 }
 
+//To write benchmarking results on a CSV file for reproducibility and data visualization
 void write_csv_row(std::ofstream &out, const std::string &impl, const std::string &op, const Stats &s)
 {
     out << std::fixed << std::setprecision(4);
@@ -51,12 +56,9 @@ void write_csv_row(std::ofstream &out, const std::string &impl, const std::strin
         << s.avg_cycles_per_byte << "\n";
 }
 
-void benchmark_aes_to_csv(const std::string &name,
-                          IAES &aes,
-                          const Block &block,
-                          size_t iterations,
-                          size_t warmup,
-                          std::ofstream &csv)
+//Function that wraps all operations from benchmarking to logging
+//For AES implementations
+void benchmark_aes_to_csv(const std::string &name, IAES &aes, const Block &block, size_t iterations, size_t warmup, std::ofstream &csv)
 {
     AESBenchmark benchmark(aes);
 
@@ -71,13 +73,9 @@ void benchmark_aes_to_csv(const std::string &name,
     write_csv_row(csv, name, "Decryption", stats_dec);
 }
 
-void benchmark_aes_steps_to_csv(const std::string &name,
-                                IAES &aes,
-                                const Block &block,
-                                size_t iterations,
-                                size_t warmup,
-                                std::ofstream &csv,
-                                const std::vector<AESOperation> &ops)
+//Function that wraps all operations from benchmarking to logging
+//For AES single steps
+void benchmark_aes_steps_to_csv(const std::string &name, IAES &aes, const Block &block, size_t iterations, size_t warmup, std::ofstream &csv, const std::vector<AESOperation> &ops)
 {
     AESBenchmark benchmark(aes);
 
@@ -93,6 +91,8 @@ void benchmark_aes_steps_to_csv(const std::string &name,
     }
 }
 
+//Performs testing by encrypting block plain -> encrypting the result again and then it decrypts twice
+//For each operation it checks that the resulting vector corresponds to the ones provided in the parameters
 void test_aes_roundtrip(IAES &aes, const Block &plain, const Block &expected1, const Block &expected2)
 {
     Block ct1 = aes.encrypt_block(plain);
@@ -108,12 +108,8 @@ void test_aes_roundtrip(IAES &aes, const Block &plain, const Block &expected1, c
     std::cout << "Decrypt 2: " << are_equal(pt2, plain)  << "\n";
 }
 
-void encrypt_decrypt_file(AesFileIo &file_io,
-                          const std::filesystem::path &input_file,
-                          const std::filesystem::path &encrypted_file,
-                          const std::filesystem::path &decrypted_file,
-                          IAES &aes,
-                          const std::string &name)
+//AES File Encryption and Decryption to test the algorithms with differents blocks (and measure the throughput)
+void encrypt_decrypt_file(AesFileIo &file_io,const std::filesystem::path &input_file, const std::filesystem::path &encrypted_file, const std::filesystem::path &decrypted_file, IAES &aes, const std::string &name)
 {
     std::cout << "Encrypting with " << name << "...\n";
     file_io.encrypt_file(input_file.string(), encrypted_file.string(), aes);
@@ -127,8 +123,7 @@ void encrypt_decrypt_file(AesFileIo &file_io,
 
 int main()
 {
-    // =========== SETUP ============
-    
+    // =========== SETUP ============  
     Key key = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; 
     Block block = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     Block block1 = {0x66, 0xE9, 0x4B, 0xD4, 0xEF, 0x8A, 0x2C, 0x3B, 0x88, 0x4C, 0xFA, 0x59, 0xCA, 0x34, 0x2B, 0x2E};
@@ -181,6 +176,7 @@ int main()
     csv.close();
 
     // ============= BENCHMARK AES STEPS ==============
+
     std::ofstream step_csv("../benchmark/benchmark_AES.csv");
     step_csv << "Implementation,Operation,P05_ns,P25_ns,Median_ns,P75_ns,P95_ns,IQR_ns,Mean_ns,StdDev_ns,Avg_Throughput_MB_s,Avg_Cycles_per_Byte\n";
 
@@ -205,6 +201,7 @@ int main()
     step_csv.close();
 
     // ============= GRAPH CREATION ==============
+
     path py_script = path("..") / "src" / "plot_benchmark.py";
     string command = "python " + py_script.string();
     system(command.c_str());

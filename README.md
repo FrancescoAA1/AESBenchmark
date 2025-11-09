@@ -1,89 +1,55 @@
 # AESBenchmark
 
-# INSTALLATION ON UBUNTU:
-we made two scripts to help with the installation.
+# Compilation and Installation
 
-A. get python enviroment running,
+# Prerequisites
+
+Ubuntu 22.04 or Windows 10/11
+
+CMake 3.15+
+
+C++17 compatible compiler
+
+Python 3.8+ with pandas and matplotlib
+
+Library Dependencies
+Botan 2.x
+
+# INSTALLATION ON UBUNTU:
+
+Clone the repository
+
+Execute the two scripts that help with the installation.
+
+A. Get python enviroment running,
 	
 	source pyenv_setup.sh --activate
 	
 	(if allready installed)
 	source ./venv/bin/activate
 
-B. get the c++ cmake working
+B. Get the c++ cmake working
 	
 	./cpp_build.sh --install-deps --install-cmake-latest --source-dir .
 
-C. Navigate to ./build folder and run AES 
+C. Navigate to ./build folder (with cd build) and run AES 
 	
-	(important to do it from build folder or it can't find the plot_benchmark.py file) 
 	./AES
 
-Project with three versions of AES and their respective performance profiles.
+	This command executes:
 
-How to Setup the Environment (for Windows)
+- Correctness tests
+- File encryption/decryption - Tests with real file I/O
+- Performance benchmarks and micro-benchmarks
+- Statistical analysis and performance comparison charts
 
-1) Install a compiler (either GCC or Visual Studio C++ Tools from the Visual Studio Installer), and CMake from CMake.org https://cmake.org/download/
-2) Make sure you have installed a compiler by typing "gcc -version" or "cl -version" on your powershell
-3) If not working, Win+S, search for Environmental Variables -> System Variables -> PATH -> Modify -> Add the path to cl.exe or gcc.exe. Then, repeat step 2.
-4) Install the extensions C/C++ and CMakeTools on VSCode
-5) Go to File -> Preferences -> Settings -> type "cmake path" and make sure it is equal to C:\Program Files\CMake\bin\cmake.exe
-5) From the project folder type the following commands:
-	5.1) mkdir build #create folder
-	
-	5.2) cd build #enter build folder
+# Running the Test Cases
 
-	5.2.1) if CMakeCache.txt is missing then run this command:
-	cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-	
-	5.3) cmake --build . #build project
-	
-	5.4) .\Debug\AES.exe #execute
-# Compile for running Ubuntu 24.04.2 LTS.
-Instrcutions for download and install Ubuntu 24.04 to test code:
-
-How to set enviroment for Windows:
-
-1): wsl --install -d Ubuntu-24.04  #Copy the command in terminal for installing  :  .
-Then setup WSL as default. or first time open, It will ask to create linux username + password
-
-2): Open Ubuntu(wsl) terminal and run :  wsl
- yourname@DESKTOP-XXXX:~$
-
-3): In abuntu, User windows file should be in directory:  /mnt/c/<folderPath>
-
-4): In Ubuntu terminal make ensure CMake and g++ installed run: 
-   sudo apt update
-   sudo apt install  build-essential -y
-
-5): mkdir build-linux  # Create a separate folder just for ubuntu builds
-
-6): cmake .  # build project, then 
-    make
-7): ./AES    # run code
+Interpreting Results
+Output Files Generated
 
 
-----
-Setup Python on Windows
 
-navigate to root folder "aesbenchmark"
-python -m venv .venv
-	it depends on your python version if the activate is in "Script" or "bin" folder
-.\.venv\Scripts\activate
-python.exe -m pip install --upgrade pip
-pip install matplotlib pandas
 
-----
-Setup Python on Ubuntu
 
-Install Python (search how)
-navigate to root folder "aesbenchmark"
-sudo apt install python3.12-venv
-Y
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install matplotlib pandas
-sudo apt install libbotan-3-dev
-sudo apt install pkg-config
    

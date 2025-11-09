@@ -1,18 +1,10 @@
-MANDATORY
-
-- write the report 
-- encrypt different blocks
-- gather data from the file encryption
-- check the shells
-- remove warnings
-
-
-NICE-TO-HAVE
-
-- add more comments
-
-
-QUESTIONS
+Missing Comments for aesbench
+aesfileio aesnaiveint
+plot benchmark
+sha256
+cmakelist
+cppbuildshell
+pyev shell
 
 
 

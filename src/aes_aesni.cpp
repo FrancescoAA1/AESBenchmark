@@ -1,5 +1,7 @@
 #include "../include/aes_aesni.h"
 
+//AES-NI detection (Windows/Linux)
+
 #if defined(_MSC_VER)
   #include <intrin.h>
   static inline void cpuid_ex(int out[4], int leaf, int subleaf = 0) {
@@ -13,11 +15,18 @@
 #endif
 
 
+// AES-NI provides _mm_aeskeygenassist_si128 to simplify AES process in hardware
 static inline __m128i key_assist(__m128i t1, __m128i t2) {
+
+    // Shuffle t2 so that all 32-bit words contain the same round constant wor
     t2 = _mm_shuffle_epi32(t2, _MM_SHUFFLE(3,3,3,3));
+
+    // AES key schedule performs three left 32-bit shifts and XORs between the partial results
     t1 = _mm_xor_si128(t1, _mm_slli_si128(t1, 4));
     t1 = _mm_xor_si128(t1, _mm_slli_si128(t1, 4));
     t1 = _mm_xor_si128(t1, _mm_slli_si128(t1, 4));
+
+     // XOR the transformed key material with the shuffled constant to produce the next round key
     return _mm_xor_si128(t1, t2);
 }
 
@@ -31,6 +40,8 @@ Block AesAESNI::m128i_to_block(__m128i reg) {
     return out;
 }
 
+// This function queries the CPU feature bits CPUID leaf 1, ECX[25] (AESNI support) to determine
+// whether AES-NI instructions are available.
 bool AesAESNI::cpu_has_aesni() {
     int r[4];
     cpuid_ex(r, 1);
@@ -43,6 +54,8 @@ void AesAESNI::expand_key(const Key &key, AES128KeySchedule &ks) {
     ks.round[0] = k;
 
     __m128i t;
+
+    //constants are RCON values
     t = _mm_aeskeygenassist_si128(k, 0x01); k = key_assist(k, t); ks.round[1]  = k;
     t = _mm_aeskeygenassist_si128(k, 0x02); k = key_assist(k, t); ks.round[2]  = k;
     t = _mm_aeskeygenassist_si128(k, 0x04); k = key_assist(k, t); ks.round[3]  = k;
@@ -76,21 +89,34 @@ AesAESNI::AesAESNI(const Key &key) : key_(key) {
     }
 }
 
+// Encrypts one 16-byte block using AES-NI instructions.
+// The structure of AES-128 encryption is the usual:
+//   1. Initial AddRoundKey
+//   2. 9 rounds of {SubBytes, ShiftRows, MixColumns, AddRoundKey}
+//   3. Final round of {SubBytes, ShiftRows, AddRoundKey} (with no MixColumns)
+
+//Inverse for Decrypt
 
 Block AesAESNI::encrypt_block(const Block &block) {
     __m128i m = block_to_m128i(block);
     m = _mm_xor_si128(m, enc_keys_.round[0]);
+
     for (int r = 1; r < 10; ++r)
         m = _mm_aesenc_si128(m, enc_keys_.round[r]);
+
     m = _mm_aesenclast_si128(m, enc_keys_.round[10]);
+
     return m128i_to_block(m);
 }
 
 Block AesAESNI::decrypt_block(const Block &block) {
     __m128i m = block_to_m128i(block);
     m = _mm_xor_si128(m, dec_keys_.round[0]);
+
     for (int r = 1; r < 10; ++r)
         m = _mm_aesdec_si128(m, dec_keys_.round[r]);
+
     m = _mm_aesdeclast_si128(m, dec_keys_.round[10]);
+
     return m128i_to_block(m);
 }
