@@ -113,7 +113,7 @@ key_exp_ops = ['AES-Naive', 'AES-TTable', 'AES-NI']
 labels3, medians3, err_low3, err_high3 = [], [], [], []
 
 for impl in key_exp_ops:
-    # Determine the correct KeyExpansion operation name for each implementation
+
     if impl == 'AES-Naive':
         op_name = 'KeyExpansion'
     elif impl == 'AES-TTable':

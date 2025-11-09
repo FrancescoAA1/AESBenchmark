@@ -21,7 +21,7 @@
 
 static double get_cpu_frequency_ghz()
 {
-    // Measure CPU frequency dynamically (simple calibration)
+    // Measure CPU frequency dynamically
     using namespace std::chrono;
     uint64_t start = __rdtsc();
     auto t1 = high_resolution_clock::now();

@@ -38,15 +38,14 @@ C. Navigate to ./build folder (with cd build) and run AES
 
 	This command executes:
 
-- Correctness tests
-- File encryption/decryption - Tests with real file I/O
-- Performance benchmarks and micro-benchmarks
-- Statistical analysis and performance comparison charts
+	- Correctness tests
+	- Performance benchmarks and micro-benchmarks on all AES implementations
+	- File encryption/decryption
+	- Statistical analysis and performance comparison charts
 
 # Running the Test Cases
 
-Interpreting Results
-Output Files Generated
+Output Files Generated respectively in the \benchmark and \file folders.
 
 
 

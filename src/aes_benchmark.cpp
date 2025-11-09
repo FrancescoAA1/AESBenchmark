@@ -44,7 +44,7 @@ inline void pin_thread_to_cpu0() {
 
 using namespace std;
 
-static double g_cpu_freq_ghz = 2.0;
+static double g_cpu_freq_ghz = 0.0;
 
 inline double cycles_to_ns(uint64_t cycles, double cpu_ghz = 2.4192) {
     return static_cast<double>(cycles) / cpu_ghz; // cycles / GHz = ns
