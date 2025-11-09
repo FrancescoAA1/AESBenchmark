@@ -45,7 +45,11 @@ C. Navigate to ./build folder (with cd build) and run AES
 
 # Running the Test Cases
 
+In main.cpp we perform a correctness test using the Design of Rijnadeal test vectors.
+We then perform both a benchmark of all implementations, and a micro-benchmark of single AES steps.
 Output Files Generated respectively in the \benchmark and \file folders.
+
+
 
 
 

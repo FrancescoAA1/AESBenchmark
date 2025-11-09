@@ -312,18 +312,11 @@ Stats AESBenchmark::benchmark_step(AESOperation step, const Block &block, size_t
     // BENCHMARKING PHASE
     for (size_t i = 0; i < iterations; ++i)
     {
-        unsigned aux;
-        _mm_lfence();
-        uint64_t start_cycles = __rdtscp(&aux);
-        _mm_lfence();
-
+        uint64_t start_cycles = __rdtsc();
         op_func(st);
+        uint64_t end_cycles = __rdtsc();
 
-        _mm_lfence();
-        uint64_t end_cycles = __rdtscp(&aux);
-        _mm_lfence();
-
-        double duration_ns = cycles_to_ns(end_cycles - start_cycles, 3.0);
+        double duration_ns = cycles_to_ns(end_cycles - start_cycles, g_cpu_freq_ghz);
 
         timings.push_back(duration_ns);
     }
