@@ -1,29 +1,3 @@
-#!/usr/bin/env bash
-# cpp_build.sh — Install toolchain + CMake and build a C++ CMake project (no Python env)
-#
-# Examples:
-#   ./cpp_build.sh --install-deps --source-dir . --run-tests
-#   ./cpp_build.sh -s . -b build-debug -t Debug --clean
-#   ./cpp_build.sh --install-deps --install-cmake-latest -s .
-#   ./cpp_build.sh --run app            # run ./build/app after build (if it exists)
-#
-# Flags:
-#   --install-deps            Install toolchain via apt (build-essential, ninja, pkg-config, botan, etc.)
-#   --install-cmake           Ensure cmake is installed from Ubuntu repos (default behavior if missing)
-#   --install-cmake-latest    Install newest cmake from Kitware APT repo
-#   --install-cmake-snap      Install cmake via snap (fallback option)
-#   --extra-apt "<pkgs>"      Extra apt packages (space-separated), e.g. "libssl-dev zlib1g-dev"
-#   --source-dir|-s <dir>     CMake source dir      (default: .)
-#   --build-dir|-b <dir>      CMake build dir       (default: ./build)
-#   --build-type|-t <type>    Debug|Release|RelWithDebInfo|MinSizeRel (default: Release)
-#   --generator <name>        Force CMake generator (default: Ninja if available, else Unix Makefiles)
-#   --run-tests               Run ctest after build
-#   --run <exe>               Run an executable after build (relative to build dir or absolute)
-#   --clean                   Remove build dir before configuring
-#   --init-submodules         git submodule sync/update --init --recursive
-#   -h|--help                 Show help
-#set -euo pipefail
-
 # ---------- defaults ----------
 SRC_DIR="$(pwd)"
 BUILD_DIR="${SRC_DIR}/build"

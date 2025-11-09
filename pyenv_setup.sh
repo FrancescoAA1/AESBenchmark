@@ -1,14 +1,3 @@
-#!/usr/bin/env bash
-# pyenv_setup.sh — Ubuntu: ensure Python is installed, create venv, install pandas & matplotlib
-# Usage:
-#   bash pyenv_setup.sh                     # install + create .venv + install packages
-#   bash pyenv_setup.sh --venv-dir .venv38  # custom venv dir
-#   source pyenv_setup.sh --activate        # install + create venv + ACTIVATE (must be sourced)
-#
-# Notes:
-# - If you run this with `bash ...`, it cannot activate your parent shell. Use `source` to auto-activate.
-# - Safe to re-run; it will reuse the existing venv.
-
 set -euo pipefail
 
 VENV_DIR="${VENV_DIR:-.venv}"
